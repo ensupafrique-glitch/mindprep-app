@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindPrep - Préparation intelligente aux examens par IA</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="auth-screen" id="authScreen" aria-labelledby="authTitle">
+      <div class="auth-brand">
+        <div class="brand-mark" aria-hidden="true">M</div>
+        <div>
+          <strong>MindPrep</strong>
+          <span>Preparation intelligente aux examens par IA</span>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-copy">
+          <p class="eyebrow">Bienvenue</p>
+          <h1 id="authTitle">Connecte-toi pour continuer ta preparation.</h1>
+          <p>
+            Retrouve ton diagnostic, tes mini-tests, ton streak et ton plan
+            d'action personnalise.
+          </p>
+          <div class="auth-notice" id="authNotice" role="status"></div>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Mode d'authentification">
+          <button class="auth-tab active" id="loginTab" type="button">Connexion</button>
+          <button class="auth-tab" id="registerTab" type="button">Inscription</button>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <label class="field is-hidden" id="nameField">
+            <span>Nom</span>
+            <input id="authName" name="name" type="text" autocomplete="name" placeholder="Sarah" />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input id="authEmail" name="email" type="email" autocomplete="email" placeholder="sarah@email.com" required />
+          </label>
+          <label class="field">
+            <span>Mot de passe</span>
+            <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="6" placeholder="6 caracteres minimum" required />
+          </label>
+          <label class="field is-hidden" id="levelField">
+            <span>Niveau</span>
+            <select id="authLevel" name="level">
+              <optgroup label="College">
+                <option value="Sixieme">Sixième</option>
+                <option value="Cinquieme">Cinquième</option>
+                <option value="Quatrieme">Quatrième</option>
+                <option value="Troisieme">Troisième</option>
+              </optgroup>
+              <optgroup label="Lycee">
+                <option value="Seconde">Seconde</option>
+                <option value="Premiere generale">Première générale</option>
+                <option value="Premiere L">Première L</option>
+                <option value="Premiere technologique">Première technologique</option>
+                <option value="Terminale generale" selected>Terminale générale</option>
+                <option value="Terminale L">Terminale L</option>
+                <option value="Terminale technologique">Terminale technologique</option>
+              </optgroup>
+              <optgroup label="Concours">
+                <option value="Concours ENA">Concours ENA</option>
+                <option value="Classes prepa">Classes prépa</option>
+              </optgroup>
+              <optgroup label="Autre">
+                <option value="Etudiant libre">Etudiant libre</option>
+              </optgroup>
+            </select>
+          </label>
+
+          <button class="primary-button" id="authSubmit" type="submit">Se connecter</button>
+          <button class="secondary-button" id="googleAuth" type="button">Continuer avec Google</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-shell is-hidden" id="appShell">
+      <aside class="sidebar" aria-label="Navigation principale">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div>
+            <strong>MindPrep</strong>
+            <span id="examContext">Bac Maths</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="dashboard" type="button">
+            <span aria-hidden="true">⌂</span>
+            Tableau
+          </button>
+          <button class="nav-item" data-view="diagnostic" type="button">
+            <span aria-hidden="true">◎</span>
+            Diagnostic
+          </button>
+          <button class="nav-item" data-view="practice" type="button">
+            <span aria-hidden="true">✓</span>
+            Mini-test
+          </button>
+          <button class="nav-item" data-view="copies" type="button">
+            <span aria-hidden="true">▣</span>
+            Copies
+          </button>
+          <button class="nav-item" data-view="courses" type="button">
+            <span aria-hidden="true">☰</span>
+            Cours facilité
+          </button>
+          <button class="nav-item" data-view="review" type="button">
+            <span aria-hidden="true">↺</span>
+            Erreurs
+          </button>
+          <button class="nav-item" data-view="progress" type="button">
+            <span aria-hidden="true">▥</span>
+            Progression
+          </button>
+        </nav>
+
+        <div class="account-card">
+          <div class="avatar" id="userAvatar" aria-hidden="true">S</div>
+          <div>
+            <strong id="userName">Sarah</strong>
+            <span id="userLevel">Terminale générale</span>
+          </div>
+          <button class="logout-button" id="logoutBtn" type="button" aria-label="Se deconnecter">Sortir</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Préparation intelligente aux examens par IA</p>
+            <h1 id="page-title">Plan du jour</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" id="notifyBtn" type="button" aria-label="Notifications">
+              <span aria-hidden="true">!</span>
+            </button>
+            <button class="primary-button" data-view-trigger="practice" type="button">Lancer 15 min</button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboard" aria-labelledby="page-title">
+          <div class="dashboard-grid">
+            <article class="hero-panel">
+              <div class="hero-copy">
+                <span class="status-pill" id="examCountdown">J-90 avant le Bac</span>
+                <h2>Sarah, révise ce qui compte vraiment aujourd’hui.</h2>
+                <p>
+                  MindPrep a détecté trois zones à renforcer. Ta prochaine session cible les
+                  probabilités, les suites et la dérivation.
+                </p>
+                <div class="hero-actions">
+                  <button class="primary-button" data-view-trigger="diagnostic" type="button">
+                    Voir mes faiblesses
+                  </button>
+                  <button class="secondary-button" data-view-trigger="practice" type="button">
+                    Faire un mini-test
+                  </button>
+                </div>
+              </div>
+              <div class="focus-map" aria-label="Carte des priorités">
+                <div class="focus-cell high">Probabilités</div>
+                <div class="focus-cell mid">Suites</div>
+                <div class="focus-cell low">Fonctions</div>
+                <div class="focus-cell mid">Dérivation</div>
+                <div class="focus-cell strong">Statistiques</div>
+                <div class="focus-cell low">Géométrie</div>
+              </div>
+            </article>
+
+            <article class="metric-card">
+              <span>Maîtrise globale</span>
+              <strong id="globalScore">62%</strong>
+              <div class="progress-track"><div class="progress-fill" style="width: 62%"></div></div>
+            </article>
+
+            <article class="metric-card">
+              <span>Streak</span>
+              <strong id="streakDays">6 jours</strong>
+              <div class="mini-calendar" aria-label="Streak des sept derniers jours">
+                <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i></i>
+              </div>
+            </article>
+
+            <article class="metric-card">
+              <span>Tests gratuits</span>
+              <strong id="freeTests">1/2</strong>
+              <button class="text-button" id="upgradeInline" type="button">Débloquer illimité</button>
+            </article>
+
+            <article class="plan-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Plan d’action</p>
+                  <h2>Session recommandée</h2>
+                </div>
+                <span class="time-chip">30 min</span>
+              </div>
+              <ol class="action-list">
+                <li>
+                  <strong>Probabilités conditionnelles</strong>
+                  <span>10 questions ciblées, feedback immédiat</span>
+                </li>
+                <li>
+                  <strong>Suites arithmétiques</strong>
+                  <span>Correction des erreurs répétées</span>
+                </li>
+                <li>
+                  <strong>Dérivation</strong>
+                  <span>2 exercices type Bac chronométrés</span>
+                </li>
+              </ol>
+            </article>
+
+            <article class="activity-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Derniers signaux</p>
+                  <h2>Ce que l’IA observe</h2>
+                </div>
+              </div>
+              <div class="insight-list">
+                <p>Tu réussis mieux quand les questions sont courtes et ciblées.</p>
+                <p>Les erreurs en probabilités viennent surtout de la lecture de l’énoncé.</p>
+                <p>Ta progression est stable depuis 6 jours. Garde le rythme.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="diagnostic">
+          <div class="two-column">
+            <article class="diagnostic-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Quiz diagnostic</p>
+                  <h2>5 minutes pour cartographier tes faiblesses</h2>
+                </div>
+                <span class="time-chip">Question <span id="diagIndex">1</span>/<span id="diagTotal">5</span></span>
+              </div>
+              <div class="question-box">
+                <p id="diagQuestion"></p>
+                <div class="answer-grid" id="diagAnswers"></div>
+              </div>
+              <div class="quiz-footer">
+                <div class="progress-track"><div class="progress-fill" id="diagProgress" style="width: 20%"></div></div>
+                <button class="primary-button" id="nextDiag" type="button">Question suivante</button>
+              </div>
+            </article>
+
+            <article class="heat-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Heat map</p>
+                  <h2>Priorités actuelles</h2>
+                </div>
+              </div>
+              <div class="topic-list" id="topicList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="practice">
+          <div class="practice-layout">
+            <article class="test-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Mini-test adaptatif</p>
+                  <h2 id="practiceTitle">Probabilités conditionnelles</h2>
+                </div>
+                <span class="time-chip"><span id="timer">15:00</span></span>
+              </div>
+              <div class="question-box">
+                <p id="practiceQuestion"></p>
+                <div class="answer-grid" id="practiceAnswers"></div>
+              </div>
+              <div class="quiz-footer">
+                <button class="secondary-button" id="skipQuestion" type="button">Passer</button>
+                <button class="primary-button" id="submitPractice" type="button">Valider</button>
+              </div>
+            </article>
+
+            <aside class="coach-panel">
+              <p class="eyebrow">Coach IA</p>
+              <h2>Conseil pendant la session</h2>
+              <p id="coachText">Lis la condition avant de choisir la formule. La plupart des erreurs viennent d’une inversion de A sachant B.</p>
+              <div class="score-stack">
+                <div><span>Score session</span><strong id="sessionScore">0/0</strong></div>
+                <div><span>Points</span><strong id="points">1240</strong></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="copies">
+          <div class="copies-layout">
+            <article class="copy-upload-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Correction de copie</p>
+                  <h2>Photographie ton devoir ou ton examen</h2>
+                </div>
+                <span class="time-chip">IA correctrice</span>
+              </div>
+
+              <label class="copy-dropzone" for="copyFile">
+                <input id="copyFile" type="file" accept="image/*,.pdf" capture="environment" />
+                <span>Ajouter une photo ou un PDF</span>
+                <strong>Copie de devoir, examen blanc, dissertation, exercice ou brouillon</strong>
+              </label>
+
+              <div class="copy-preview" id="copyPreview">
+                <span>Aucune copie ajoutée</span>
+              </div>
+
+              <label class="field">
+                <span>Matière</span>
+                <select id="copySubject">
+                  <option>Mathématiques</option>
+                  <option>Philosophie</option>
+                  <option>Histoire</option>
+                  <option>Géographie</option>
+                  <option>Littérature</option>
+                  <option>Langues</option>
+                  <option>Culture générale</option>
+                  <option>Droit public</option>
+                  <option>Note de synthèse</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Consigne ou sujet</span>
+                <textarea id="copyPrompt" rows="4" placeholder="Ex: Dissertation: La liberté est-elle une illusion ?"></textarea>
+              </label>
+
+              <button class="primary-button" id="analyzeCopy" type="button">Lire et corriger la copie</button>
+            </article>
+
+            <article class="copy-result-panel">
+              <p class="eyebrow">Résultat</p>
+              <h2 id="copyResultTitle">En attente de copie</h2>
+              <div class="grade-card">
+                <span>Note estimée</span>
+                <strong id="copyGrade">--/20</strong>
+              </div>
+              <div class="correction-box" id="copyReading">
+                <strong>Lecture</strong>
+                <span>MindPrep affichera ici ce qu’il a compris de la copie.</span>
+              </div>
+              <div class="correction-box" id="copyFeedback">
+                <strong>Appréciation</strong>
+                <span>Ajoute une copie pour obtenir une appréciation détaillée.</span>
+              </div>
+              <div class="support-plan" id="supportPlan">
+                <h3>Plan d’accompagnement</h3>
+                <ol>
+                  <li>Ajouter une copie à analyser.</li>
+                </ol>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="courses">
+          <div class="courses-layout">
+            <article class="course-builder-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Cours optionnels</p>
+                  <h2>Transforme un cours en machine à apprendre</h2>
+                </div>
+                <span class="time-chip">4 niveaux</span>
+              </div>
+
+              <div class="course-method-grid">
+                <div>
+                  <strong>Idée centrale</strong>
+                  <span>Le coeur du chapitre</span>
+                </div>
+                <div>
+                  <strong>Concepts clés</strong>
+                  <span>Les briques essentielles</span>
+                </div>
+                <div>
+                  <strong>Relations</strong>
+                  <span>Le vrai savoir</span>
+                </div>
+                <div>
+                  <strong>Applications</strong>
+                  <span>Exercices et cas réels</span>
+                </div>
+              </div>
+
+              <label class="field">
+                <span>Matière</span>
+                <select id="courseSubject">
+                  <option>Comptabilité de gestion</option>
+                  <option>Mathématiques</option>
+                  <option>Philosophie</option>
+                  <option>Histoire</option>
+                  <option>Géographie</option>
+                  <option>Littérature</option>
+                  <option>Finance</option>
+                  <option>Fiscalité</option>
+                  <option>Audit</option>
+                  <option>Culture générale</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Titre du cours</span>
+                <input id="courseTitle" type="text" placeholder="Ex: Seuil de rentabilité" />
+              </label>
+
+              <label class="field">
+                <span>Colle ton cours ou tes notes</span>
+                <textarea id="courseNotes" rows="8" placeholder="Colle ici ton cours. MindPrep va le compresser en mots-clés, relations, schéma et plan d’entraînement."></textarea>
+              </label>
+
+              <div class="hero-actions">
+                <button class="primary-button" id="generateCourse" type="button">Créer le cours intelligent</button>
+                <button class="secondary-button" id="loadCourseExample" type="button">Exemple guidé</button>
+              </div>
+            </article>
+
+            <article class="course-output-panel">
+              <p class="eyebrow">Cours généré</p>
+              <h2 id="courseOutputTitle">En attente de contenu</h2>
+              <div class="critical-alerts" id="criticalAlerts">
+                <strong>Alertes critiques</strong>
+                <span>Les points à risque apparaîtront ici.</span>
+              </div>
+              <div class="course-output-grid" id="courseOutput">
+                <div class="course-block">
+                  <strong>Décomposition</strong>
+                  <span>Ajoute un cours pour obtenir les mots-clés essentiels.</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="review">
+          <div class="review-layout">
+            <article class="feedback-panel">
+              <p class="eyebrow">Feedback détaillé</p>
+              <h2 id="feedbackTitle">Dernière correction</h2>
+              <p id="feedbackText">
+                Fais un mini-test pour recevoir une correction contextualisée et une explication claire.
+              </p>
+              <div class="correction-box" id="correctionBox">
+                <strong>En attente</strong>
+                <span>Aucune réponse validée dans cette session.</span>
+              </div>
+            </article>
+            <article class="errors-panel">
+              <p class="eyebrow">Historique des erreurs</p>
+              <h2>À revoir</h2>
+              <div class="error-list" id="errorList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="progress">
+          <div class="progress-layout">
+            <article class="progress-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Progression</p>
+                  <h2>Maîtrise par thème</h2>
+                </div>
+                <button class="secondary-button" id="examMode" type="button">Mode examen</button>
+              </div>
+              <div class="bar-list" id="barList"></div>
+            </article>
+
+            <article class="pricing-panel" id="pricingPanel">
+              <p class="eyebrow">Premium</p>
+              <h2>Révisions illimitées</h2>
+              <p>Débloque les corrections IA, les stats détaillées et le mode examen complet.</p>
+              <div class="price-row">
+                <strong>4,99 $</strong>
+                <span>par mois</span>
+              </div>
+              <button class="primary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
+              <button class="secondary-button" id="proPlan" type="button">Voir Pro à 9,99 $</button>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

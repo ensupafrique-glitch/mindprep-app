@@ -3,6 +3,16 @@ import { renderCourse } from "./core/renderers/course-renderer.js";
 import { courseExamples } from "./data/examples.js";
 import { AccessEngine, CheckoutEngine, PricingEngine, BillingUtils } from "./core/billing/index.js";
 import { ReportEngine, PDFExporter, DOCXExporter, ReportingUtils } from "./core/reporting/index.js";
+import {
+  generateTopics,
+  searchTopics,
+  gradeAnswer,
+  recommendNextLevel,
+  computeProgressStats,
+  topicTypeLabel,
+  levelById,
+  DIFFICULTY_LEVELS,
+} from "./core/training-engine/index.js";
 import { createClient as createSupabaseClientSdk } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 // Initialisation des moteurs de monétisation
@@ -31,6 +41,7 @@ const titles = {
   diagnostic: "Diagnostic",
   practice: "Mini-test",
   copies: "Copies à corriger",
+  training: "Entraînement intelligent",
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",
   progress: "Progression",
@@ -2240,3 +2251,400 @@ async function initializeAuth() {
 }
 
 initializeAuth();
+
+/* ============================================================
+ * Entraînement intelligent — sujets, copies, progression
+ * ============================================================
+ *
+ * Le state ci-dessous reste en mémoire (et dans localStorage) tant que
+ * la persistance backend n'est pas branchée. Les fonctions du module
+ * core/training-engine sont des points d'extension explicites pour
+ * brancher une vraie IA / une vraie recherche d'annales plus tard.
+ */
+
+const TRAINING_STORAGE_KEY = "mindprep_training_state_v1";
+
+const trainingState = loadTrainingState();
+
+function loadTrainingState() {
+  const fallback = {
+    topics: [],
+    copies: [], // { id, topicId, topicTitle, topicLevel, subject, status, note, report, submittedAt }
+    currentLevel: 1,
+    lastCourseTitle: null,
+    lastCourseSubject: null,
+  };
+  try {
+    const raw = window.localStorage?.getItem(TRAINING_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return { ...fallback, ...parsed };
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveTrainingState() {
+  try {
+    window.localStorage?.setItem(TRAINING_STORAGE_KEY, JSON.stringify(trainingState));
+  } catch (e) {
+    // best effort
+  }
+}
+
+function isPremiumTier() {
+  return ["basic", "premium", "pro"].includes(currentUser.tier);
+}
+
+const FREE_TOPICS_LIMIT = 3;
+
+function visibleTopicsForUser(topics) {
+  return isPremiumTier() ? topics : topics.slice(0, FREE_TOPICS_LIMIT);
+}
+
+/* ---------- Onglets de la section Entraînement ---------- */
+
+document.querySelectorAll(".training-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.trainingTab;
+    document.querySelectorAll(".training-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".training-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.trainingPane === target);
+    });
+  });
+});
+
+/* ---------- Génération de sujets à partir du dernier cours ---------- */
+
+function generateAndShowTopicsFromCourse() {
+  const subject = lastCourseSubject || courseSubject?.value || "";
+  const title = (courseTitle?.value || "").trim() || (lastCourseModel?.mainIdea || "");
+  if (!title) {
+    showToast("Génère d'abord un cours intelligent pour obtenir des sujets adaptés.");
+    return false;
+  }
+  trainingState.topics = generateTopics(subject, title, { topicsPerLevel: 2 });
+  trainingState.lastCourseTitle = title;
+  trainingState.lastCourseSubject = subject;
+  saveTrainingState();
+  renderTopicsList();
+  switchTrainingTab("topics");
+  showToast(`${trainingState.topics.length} sujets générés sur 5 niveaux.`);
+  return true;
+}
+
+function switchTrainingTab(name) {
+  const tab = document.querySelector(`.training-tab[data-training-tab="${name}"]`);
+  if (tab) tab.click();
+}
+
+document.querySelector("#trainingGenerateFromCourse")?.addEventListener("click", () => {
+  setView("training");
+  generateAndShowTopicsFromCourse();
+});
+
+document.querySelector("#topicsRegenerate")?.addEventListener("click", () => {
+  generateAndShowTopicsFromCourse();
+});
+
+/* ---------- Filtres de sujets ---------- */
+
+const filterLevel = document.querySelector("#filterLevel");
+const filterType = document.querySelector("#filterType");
+const filterDuration = document.querySelector("#filterDuration");
+const filterQuery = document.querySelector("#filterQuery");
+
+[filterLevel, filterType, filterDuration, filterQuery].forEach((el) => {
+  el?.addEventListener("input", renderTopicsList);
+  el?.addEventListener("change", renderTopicsList);
+});
+
+function getActiveFilters() {
+  return {
+    level: filterLevel?.value || null,
+    type: filterType?.value || null,
+    maxDuration: filterDuration?.value || null,
+    query: filterQuery?.value || "",
+  };
+}
+
+function renderTopicsList() {
+  const listEl = document.querySelector("#topicsList");
+  if (!listEl) return;
+  if (!trainingState.topics.length) {
+    listEl.innerHTML = `<p class="empty-state">Aucun sujet pour le moment. Génère un cours puis clique sur « Regénérer des sujets ».</p>`;
+    return;
+  }
+  const filtered = searchTopics(trainingState.topics, getActiveFilters());
+  const visible = visibleTopicsForUser(filtered);
+  if (!visible.length) {
+    listEl.innerHTML = `<p class="empty-state">Aucun sujet ne correspond à ces filtres.</p>`;
+    return;
+  }
+  const lockedCount = filtered.length - visible.length;
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  listEl.innerHTML = visible
+    .map((t) => `
+      <article class="topic-card" data-topic-id="${t.id}">
+        <header>
+          <span class="topic-level level-${t.level}">${escape(levelById(t.level).short)}</span>
+          <span class="topic-type">${escape(topicTypeLabel(t.type))}</span>
+          <span class="topic-duration">⏱ ${t.durationMin} min</span>
+        </header>
+        <h4>${escape(t.title)}</h4>
+        <p>${escape(t.prompt)}</p>
+        <footer>
+          <span class="topic-subject">${escape(t.subject || "")}</span>
+          <button class="primary-button topic-answer-btn" type="button" data-topic-id="${t.id}">Traiter ce sujet</button>
+        </footer>
+      </article>
+    `).join("") + (lockedCount > 0 ? `
+      <article class="topic-card topic-locked">
+        <h4>🔒 ${lockedCount} sujet${lockedCount > 1 ? "s" : ""} réservé${lockedCount > 1 ? "s" : ""} au Premium</h4>
+        <p>Passe en Premium pour débloquer tous les niveaux, la correction détaillée et la progression IA.</p>
+        <button class="primary-button" type="button" id="topicsLockedUpgrade">Voir les offres</button>
+      </article>` : "");
+
+  listEl.querySelectorAll(".topic-answer-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openTopicAnswerModal(btn.dataset.topicId));
+  });
+  document.querySelector("#topicsLockedUpgrade")?.addEventListener("click", () => {
+    document.querySelector("#paywallModal")?.classList.remove("is-hidden");
+  });
+}
+
+/* ---------- Modal de réponse ---------- */
+
+let activeTopicId = null;
+let activeAnswerFile = null;
+
+const topicModal = document.querySelector("#topicAnswerModal");
+const topicResultModal = document.querySelector("#topicResultModal");
+
+topicModal?.querySelectorAll("[data-topic-close]").forEach((el) => {
+  el.addEventListener("click", () => closeTopicModal());
+});
+topicResultModal?.querySelectorAll("[data-result-close]").forEach((el) => {
+  el.addEventListener("click", () => topicResultModal.classList.add("is-hidden"));
+});
+
+document.querySelectorAll(".topic-answer-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.answerMode;
+    document.querySelectorAll(".topic-answer-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".topic-answer-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.answerPane === mode);
+    });
+  });
+});
+
+document.querySelector("#topicAnswerText")?.addEventListener("input", (e) => {
+  const words = (e.target.value || "").trim().split(/\s+/).filter(Boolean).length;
+  const el = document.querySelector("#topicAnswerCount");
+  if (el) el.textContent = `${words} mot${words > 1 ? "s" : ""}`;
+});
+
+document.querySelector("#topicAnswerFile")?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0] || null;
+  activeAnswerFile = file;
+  const el = document.querySelector("#topicAnswerFileName");
+  if (el) el.textContent = file ? `${file.name} (${Math.round(file.size / 1024)} Ko)` : "Aucun fichier sélectionné.";
+});
+
+function openTopicAnswerModal(topicId) {
+  const topic = trainingState.topics.find((t) => t.id === topicId);
+  if (!topic) return;
+  activeTopicId = topicId;
+  activeAnswerFile = null;
+  document.querySelector("#topicModalLevel").textContent = levelById(topic.level).label;
+  document.querySelector("#topicModalTitle").textContent = `${topicTypeLabel(topic.type)} — ${topic.title}`;
+  document.querySelector("#topicModalPrompt").textContent = topic.prompt;
+  const txt = document.querySelector("#topicAnswerText");
+  if (txt) txt.value = "";
+  const cnt = document.querySelector("#topicAnswerCount");
+  if (cnt) cnt.textContent = "0 mots";
+  const fileInput = document.querySelector("#topicAnswerFile");
+  if (fileInput) fileInput.value = "";
+  const fname = document.querySelector("#topicAnswerFileName");
+  if (fname) fname.textContent = "Aucun fichier sélectionné.";
+  document.querySelectorAll(".topic-answer-tab").forEach((t, i) => t.classList.toggle("active", i === 0));
+  document.querySelectorAll(".topic-answer-pane").forEach((p) => p.classList.toggle("active", p.dataset.answerPane === "text"));
+  topicModal?.classList.remove("is-hidden");
+}
+
+function closeTopicModal() {
+  topicModal?.classList.add("is-hidden");
+  activeTopicId = null;
+  activeAnswerFile = null;
+}
+
+document.querySelector("#submitTopicAnswer")?.addEventListener("click", () => {
+  const topic = trainingState.topics.find((t) => t.id === activeTopicId);
+  if (!topic) return;
+  const text = document.querySelector("#topicAnswerText")?.value || "";
+  const fileName = activeAnswerFile?.name || null;
+  if (!text.trim() && !fileName) {
+    showToast("Écris une réponse ou dépose un fichier avant d'envoyer.");
+    return;
+  }
+  // Hook : ici, en production, on uploadrait le fichier vers Supabase Storage
+  // ou on enverrait le texte à une API de correction IA.
+  const report = gradeAnswer(topic, { text, fileName, fileType: activeAnswerFile?.type });
+  const copyId = `copy_${Date.now()}`;
+  const copy = {
+    id: copyId,
+    topicId: topic.id,
+    topicTitle: topic.title,
+    topicPrompt: topic.prompt,
+    topicLevel: topic.level,
+    topicType: topic.type,
+    subject: topic.subject,
+    status: isPremiumTier() ? "Corrigée" : "Corrigée (aperçu)",
+    note: report.note,
+    report: { ...report, subject: topic.subject },
+    submittedAt: new Date().toISOString(),
+    fileName,
+  };
+  trainingState.copies.unshift(copy);
+  // Adaptation du niveau
+  const reco = recommendNextLevel(trainingState.copies.map((c) => c.report), trainingState.currentLevel);
+  trainingState.currentLevel = reco.nextLevel;
+  saveTrainingState();
+  renderCopiesTable();
+  renderTrainingHistory();
+  renderProgressStats();
+  renderRecommendedLevel(reco);
+  closeTopicModal();
+  showCorrectionResult(copy);
+});
+
+function showCorrectionResult(copy) {
+  const r = copy.report;
+  document.querySelector("#topicResultTitle").textContent = `${copy.topicTitle} — Niveau ${copy.topicLevel}`;
+  document.querySelector("#topicResultGrade").textContent = `${r.note}/${r.noteOver}`;
+  const renderCriteria = (list) => list.map((c) => `<li><span>${c.name}</span><strong>${c.value}/5</strong></li>`).join("");
+  document.querySelector("#resultFondList").innerHTML = renderCriteria(r.fond.criteria);
+  document.querySelector("#resultFormeList").innerHTML = renderCriteria(r.forme.criteria);
+  const ul = (arr) => arr.length ? arr.map((s) => `<li>${s}</li>`).join("") : "<li>—</li>";
+  // Pour le tier gratuit : on masque les détails forces/faiblesses/conseils complets
+  if (!isPremiumTier()) {
+    document.querySelector("#resultStrengths").innerHTML = `<li>${r.strengths[0] || "Bon début, continue !"}</li>`;
+    document.querySelector("#resultWeaknesses").innerHTML = `<li>🔒 Détails complets réservés au Premium.</li>`;
+    document.querySelector("#resultAdvice").innerHTML = `<li>🔒 Conseils IA détaillés réservés au Premium.</li>`;
+  } else {
+    document.querySelector("#resultStrengths").innerHTML = ul(r.strengths);
+    document.querySelector("#resultWeaknesses").innerHTML = ul(r.weaknesses);
+    document.querySelector("#resultAdvice").innerHTML = ul(r.advice);
+  }
+  topicResultModal?.classList.remove("is-hidden");
+}
+
+/* ---------- Table des copies ---------- */
+
+function renderCopiesTable() {
+  const tbody = document.querySelector("#copiesTableBody");
+  const countEl = document.querySelector("#copiesCount");
+  if (countEl) countEl.textContent = String(trainingState.copies.length);
+  if (!tbody) return;
+  if (!trainingState.copies.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Aucune copie pour le moment. Choisis un sujet à traiter pour commencer.</td></tr>`;
+    return;
+  }
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  tbody.innerHTML = trainingState.copies.map((c) => `
+    <tr>
+      <td>
+        <strong>${escape(c.topicTitle)}</strong>
+        <small>${escape(topicTypeLabel(c.topicType))}</small>
+      </td>
+      <td><span class="topic-level level-${c.topicLevel}">${escape(levelById(c.topicLevel).short)}</span></td>
+      <td><span class="status-pill status-${c.status.startsWith("Corr") ? "ok" : "pending"}">${escape(c.status)}</span></td>
+      <td><strong>${c.note}/${c.report.noteOver}</strong></td>
+      <td><small>${escape((c.report.advice && c.report.advice[0]) || "—")}</small></td>
+      <td><button class="text-button" type="button" data-view-copy="${c.id}">Voir</button></td>
+    </tr>
+  `).join("");
+  tbody.querySelectorAll("[data-view-copy]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const copy = trainingState.copies.find((c) => c.id === btn.dataset.viewCopy);
+      if (copy) showCorrectionResult(copy);
+    });
+  });
+  // Mini résumé de progression sous la table
+  const stats = computeProgressStats(trainingState.copies.map((c) => c.report));
+  const summary = document.querySelector("#copiesProgressSummary");
+  if (summary) {
+    summary.innerHTML = `
+      <div><span>Copies</span><strong>${stats.copyCount}</strong></div>
+      <div><span>Note moyenne</span><strong>${stats.averageNote || 0}/20</strong></div>
+      <div><span>Niveau actuel</span><strong>${trainingState.currentLevel}</strong></div>
+    `;
+  }
+}
+
+/* ---------- Historique ---------- */
+
+function renderTrainingHistory() {
+  const ul = document.querySelector("#trainingHistory");
+  if (!ul) return;
+  if (!trainingState.copies.length) {
+    ul.innerHTML = `<li class="empty-state">Pas encore d'entraînement enregistré.</li>`;
+    return;
+  }
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  ul.innerHTML = trainingState.copies.slice(0, 20).map((c) => {
+    const d = new Date(c.submittedAt);
+    const date = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `
+      <li>
+        <div>
+          <strong>${escape(c.topicTitle)}</strong>
+          <small>${escape(topicTypeLabel(c.topicType))} · Niveau ${c.topicLevel} · ${date}</small>
+        </div>
+        <span class="history-grade">${c.note}/${c.report.noteOver}</span>
+      </li>
+    `;
+  }).join("");
+}
+
+/* ---------- Progression intelligente ---------- */
+
+function renderProgressStats() {
+  const stats = computeProgressStats(trainingState.copies.map((c) => c.report));
+  document.querySelector("#statCopyCount").textContent = String(stats.copyCount);
+  document.querySelector("#statAvgNote").textContent = stats.copyCount ? `${stats.averageNote}/20` : "--/20";
+  document.querySelector("#statLevel").textContent = String(trainingState.currentLevel);
+
+  const renderSub = (host, list, empty) => {
+    const el = document.querySelector(host);
+    if (!el) return;
+    if (!list.length) { el.innerHTML = `<p class="empty-state">${empty}</p>`; return; }
+    el.innerHTML = list.map((s) => `
+      <div class="subject-row">
+        <span>${s.name || "—"}</span>
+        <strong>${s.avg}/20</strong>
+        <small>${s.count} copie${s.count > 1 ? "s" : ""}</small>
+      </div>
+    `).join("");
+  };
+  renderSub("#strongSubjects", stats.strongSubjects, "Pas encore de matière forte identifiée.");
+  renderSub("#weakSubjects", stats.weakSubjects, "Pas encore de matière à renforcer identifiée.");
+}
+
+function renderRecommendedLevel(reco) {
+  const r = reco || recommendNextLevel(trainingState.copies.map((c) => c.report), trainingState.currentLevel);
+  const lvl = levelById(r.nextLevel);
+  document.querySelector("#trainingCurrentLevel").textContent = lvl.label;
+  document.querySelector("#trainingLevelReason").textContent = `${r.reason} ${r.action}`;
+  const advice = document.querySelector("#progressAdvice");
+  if (advice) advice.textContent = r.action;
+}
+
+/* ---------- Initialisation au chargement ---------- */
+
+renderTopicsList();
+renderCopiesTable();
+renderTrainingHistory();
+renderProgressStats();
+renderRecommendedLevel();
+

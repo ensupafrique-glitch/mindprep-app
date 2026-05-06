@@ -777,6 +777,16 @@
         </section>
 
         <section class="view" id="settings" aria-label="Paramètres">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Paramètres</p>
+              <h2>Personnalise MindPrep en quelques clics</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" id="settingsLogoutTop">Se déconnecter</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="settings-layout">
             <article class="settings-panel">
               <div class="section-heading">
@@ -823,9 +833,20 @@
               <button class="secondary-button" type="button" id="settingsLogout">Se déconnecter</button>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="diagnostic">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Diagnostic 5 min</p>
+              <h2>Cartographie tes points faibles en 5 minutes</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" data-view-trigger="dashboard">Retour au cockpit</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="two-column">
             <article class="diagnostic-panel">
               <div class="section-heading">
@@ -855,9 +876,21 @@
               <div class="topic-list" id="topicList"></div>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="practice">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Mini-tests adaptatifs</p>
+              <h2>Active la connaissance — réponds, valide, progresse</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" data-view-trigger="training" data-nav-key="topics">Voir tous les sujets</button>
+              <button class="secondary-button" type="button" data-view-trigger="dashboard">Retour cockpit</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="practice-layout">
             <article class="test-panel">
               <div class="section-heading">
@@ -887,9 +920,21 @@
               </div>
             </aside>
           </div>
+          </div>
         </section>
 
         <section class="view" id="training" aria-labelledby="trainingTitle">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Entraînement intelligent</p>
+              <h2 id="trainingTitleHeader">Sujets, mini-tests, copies, historique</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <span class="panel-pill" id="trainingLevelPill">Niveau 1</span>
+              <button class="secondary-button" type="button" id="topicsRegenerateTop">Régénérer</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="training-hero">
             <div>
               <p class="eyebrow">Entraînement intelligent</p>
@@ -1100,6 +1145,7 @@
               </article>
             </div>
           </section>
+          </div>
         </section>
 
         <!-- Modal de réponse à un sujet -->
@@ -1193,6 +1239,17 @@
         </div>
 
         <section class="view" id="copies">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Copies à corriger</p>
+              <h2>Dépose une copie, reçois une correction IA fond + forme</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <span class="panel-pill">IA correctrice</span>
+              <button class="secondary-button" type="button" data-view-trigger="dashboard">Retour cockpit</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="copies-layout">
             <article class="copy-upload-panel">
               <div class="section-heading">
@@ -1290,9 +1347,21 @@
               </div>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="courses">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Mes cours · Génération intelligente</p>
+              <h2>Transforme un cours en machine à apprendre</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" id="loadCourseExampleTop">Charger un exemple</button>
+              <button class="secondary-button" type="button" data-view-trigger="practice">Lancer un mini-test</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="courses-layout">
             <article class="course-builder-panel">
               <div class="section-heading">
@@ -1396,9 +1465,20 @@
               </div>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="review">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Feedback</p>
+              <h2>Correction et historique des erreurs</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" data-view-trigger="practice">Reprendre un mini-test</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="review-layout">
             <article class="feedback-panel">
               <p class="eyebrow">Feedback détaillé</p>
@@ -1417,9 +1497,21 @@
               <div class="error-list" id="errorList"></div>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="presentation" aria-labelledby="presentationTitle">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Exposé intelligent</p>
+              <h2>Plan, slides, mind map et questions du jury</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" id="presoExampleTop">Exemple guidé</button>
+              <button class="secondary-button" type="button" data-view-trigger="dashboard">Retour cockpit</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="presentation-layout">
             <article class="presentation-hero">
               <p class="eyebrow">Nouveau · Présentation IA</p>
@@ -1584,9 +1676,21 @@
               </div>
             </article>
           </div>
+          </div>
         </section>
 
         <section class="view" id="progress">
+          <header class="panel-toolbar">
+            <div class="panel-toolbar-title">
+              <p class="eyebrow">Progression</p>
+              <h2>Maîtrise par thème · objectifs · Premium</h2>
+            </div>
+            <div class="panel-toolbar-actions">
+              <button class="secondary-button" type="button" id="examModeTop">Mode examen</button>
+              <button class="secondary-button" type="button" data-view-trigger="dashboard">Retour cockpit</button>
+            </div>
+          </header>
+          <div class="panel-body">
           <div class="progress-layout">
             <article class="progress-panel">
               <div class="section-heading">
@@ -1617,6 +1721,7 @@
               <button class="secondary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
               <p class="pricing-microcopy">💳 Carte bancaire (Stripe / PayPal) · 🌍 Wave · Orange Money · Free Money · Paiement en FCFA ou en € (EUR)</p>
             </article>
+          </div>
           </div>
         </section>
 

@@ -1289,10 +1289,16 @@ function setView(viewName, options = {}) {
   if (sidebar) sidebar.classList.remove("is-open");
 
   // Scroll en haut pour cohérence visuelle :
-  // dans le mode cockpit la zone centrale a son propre scroll, sinon
+  // dans le mode cockpit chaque panneau (panel-body) a son propre scroll,
+  // la zone centrale (workspace-grid) a aussi son scroll local, et en mobile
   // on retombe sur le scroll de la fenêtre.
   if (typeof window !== "undefined") {
     try {
+      const activeView = document.getElementById(viewName);
+      const panelBody = activeView ? activeView.querySelector(".panel-body") : null;
+      if (panelBody && panelBody.scrollTop > 0) {
+        panelBody.scrollTo({ top: 0, behavior: "smooth" });
+      }
       const grid = document.querySelector(".workspace-grid");
       if (grid && grid.scrollTop > 0) {
         grid.scrollTo({ top: 0, behavior: "smooth" });
@@ -3567,3 +3573,40 @@ function refreshDashboardStats() {
   } catch (_) {}
 }
 refreshDashboardStats();
+
+// --- Cockpit panoramique : relais toolbars ---
+// Les nouveaux boutons en haut de chaque panneau (panel-toolbar) délèguent
+// vers les boutons canoniques existants pour ne pas dupliquer la logique.
+function wireToolbarRelay(topId, targetId) {
+  const top = document.getElementById(topId);
+  const target = document.getElementById(targetId);
+  if (top && target) {
+    top.addEventListener("click", (event) => {
+      event.preventDefault();
+      target.click();
+    });
+  }
+}
+wireToolbarRelay("settingsLogoutTop", "settingsLogout");
+wireToolbarRelay("topicsRegenerateTop", "topicsRegenerate");
+wireToolbarRelay("loadCourseExampleTop", "loadCourseExample");
+wireToolbarRelay("presoExampleTop", "presoExample");
+wireToolbarRelay("examModeTop", "examMode");
+
+// Synchronise la pastille de niveau dans la toolbar Entraînement avec
+// la valeur calculée par le moteur d'entraînement intelligent.
+function syncTrainingLevelPill() {
+  const pill = document.getElementById("trainingLevelPill");
+  const source = document.getElementById("trainingCurrentLevel");
+  if (!pill || !source) return;
+  const text = (source.textContent || "").trim();
+  if (text) pill.textContent = text;
+}
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", syncTrainingLevelPill, { once: true });
+  } else {
+    syncTrainingLevelPill();
+  }
+  window.setInterval(syncTrainingLevelPill, 2000);
+}

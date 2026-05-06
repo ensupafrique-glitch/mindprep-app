@@ -5887,3 +5887,186 @@ body > .subscription-status {
     position: static;
   }
 }
+
+/* ========================================================================
+   COCKPIT PANORAMIQUE — composants modulaires (panel-toolbar / panel-body)
+   ----------------------------------------------------------------------
+   Chaque vue secondaire (autre que dashboard) est encapsulée dans une
+   structure : .view > .panel-toolbar + .panel-body
+   La toolbar reste fixe en haut du panneau, le body scrolle localement
+   en mode cockpit desktop. Sur mobile, comportement document classique.
+   ======================================================================== */
+
+.workspace-main .view > .panel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--line-soft, #e2e8f0);
+  border-radius: 16px 16px 0 0;
+  border-bottom: 1px solid var(--line-soft, #e2e8f0);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+.panel-toolbar-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-toolbar-title .eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand, #10b981);
+}
+
+.panel-toolbar-title h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong, #0f172a);
+  line-height: 1.25;
+}
+
+.panel-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-toolbar-actions .secondary-button,
+.panel-toolbar-actions .primary-button {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  border-radius: 10px;
+}
+
+.panel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.workspace-main .view > .panel-body {
+  background: #ffffff;
+  border: 1px solid var(--line-soft, #e2e8f0);
+  border-top: 0;
+  border-radius: 0 0 16px 16px;
+  padding: 18px;
+  box-shadow: var(--shadow-xs);
+}
+
+.panel-empty {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 32px 18px;
+  border: 1px dashed var(--line-soft, #e2e8f0);
+  border-radius: 12px;
+  color: var(--text-muted, #64748b);
+}
+
+/* Cockpit desktop : le panneau prend la hauteur disponible et scrolle en interne.
+   Sur la grille cockpit, .workspace-grid scrolle déjà — on garde ici un scroll
+   local au panneau pour les vues très denses (training, presentation). */
+@media (min-width: 1081px) {
+  .workspace-main .view > .panel-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: saturate(180%) blur(6px);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%);
+  }
+
+  .workspace-main .view > .panel-body {
+    /* hauteur libre — la grille cockpit gère le scroll, mais on autorise
+       un dépassement local pour les vues riches sans casser le layout. */
+    max-height: none;
+  }
+}
+
+/* Sur tablette/mobile, on relâche : pas de sticky, padding réduit. */
+@media (max-width: 1080px) {
+  .workspace-main .view > .panel-toolbar {
+    border-radius: 14px 14px 0 0;
+    padding: 12px 14px;
+  }
+  .workspace-main .view > .panel-body {
+    padding: 14px;
+    border-radius: 0 0 14px 14px;
+  }
+  .panel-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Densification : sur grands écrans, comprimer encore les marges intérieures
+   pour offrir un rendu plus cockpit / SaaS pro. */
+@media (min-width: 1281px) {
+  .workspace-main .view > .panel-body {
+    padding: 20px;
+  }
+}
+
+/* La vue dashboard reste sans wrapping panel pour conserver son rendu
+   « hero cockpit » riche en widgets — déjà conforme à la logique cockpit. */
+
+/* Supprimer le double padding lorsqu'un .view contient déjà un panel-body :
+   les enfants directs (layout 2 colonnes) ne doivent pas re-créer de marges. */
+.workspace-main .view > .panel-body > .settings-layout,
+.workspace-main .view > .panel-body > .two-column,
+.workspace-main .view > .panel-body > .practice-layout,
+.workspace-main .view > .panel-body > .copies-layout,
+.workspace-main .view > .panel-body > .courses-layout,
+.workspace-main .view > .panel-body > .review-layout,
+.workspace-main .view > .panel-body > .progress-layout,
+.workspace-main .view > .panel-body > .presentation-layout,
+.workspace-main .view > .panel-body > .training-hero,
+.workspace-main .view > .panel-body > .training-tabs,
+.workspace-main .view > .panel-body > .training-pane {
+  margin-top: 0;
+}
+
+/* Légère séparation visuelle entre la toolbar et un layout 2 colonnes. */
+.workspace-main .view > .panel-body > .training-hero {
+  margin-bottom: 14px;
+}
+
+/* Empêcher les longs panneaux internes de pousser un scroll horizontal
+   indésirable (formulaires copies, presentation). */
+.workspace-main .view > .panel-body {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* En cockpit desktop, les anciennes vues qui empilaient verticalement
+   (ex. training avec hero + tabs + pane) bénéficient maintenant d'un cadre
+   compact + tabs internes — on lisse les hero pour qu'ils ne dominent pas. */
+@media (min-width: 1281px) {
+  .training-hero {
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+  .presentation-hero {
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+}

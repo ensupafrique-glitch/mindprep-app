@@ -1587,9 +1587,70 @@ document.querySelectorAll("[data-view], [data-view-trigger]").forEach((button) =
 loginTab.addEventListener("click", () => setAuthMode("login"));
 registerTab.addEventListener("click", () => setAuthMode("register"));
 
-authForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+let authSubmitInFlight = false;
+
+const AUTH_TIMEOUT_MS = 15000;
+
+function withAuthTimeout(promise, label) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`Le serveur ${label} met trop de temps à répondre. Vérifie ta connexion puis réessaie.`));
+    }, AUTH_TIMEOUT_MS);
+
+    Promise.resolve(promise)
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+function friendlyAuthErrorMessage(rawMessage, mode) {
+  const message = String(rawMessage || "").toLowerCase();
+
+  if (!message) {
+    return mode === "register"
+      ? "Une erreur est survenue lors de la création du compte. Réessaie."
+      : "Une erreur est survenue lors de la connexion. Réessaie.";
+  }
+
+  if (message.includes("already") || message.includes("registered") || message.includes("exists") || message.includes("duplicate")) {
+    return "Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.";
+  }
+  if (message.includes("invalid login") || message.includes("invalid credentials") || message.includes("invalid email or password")) {
+    return "Email ou mot de passe incorrect.";
+  }
+  if (message.includes("invalid email") || message.includes("email address")) {
+    return "Email invalide. Vérifie son format.";
+  }
+  if (message.includes("password") && (message.includes("short") || message.includes("weak") || message.includes("6") || message.includes("characters"))) {
+    return "Mot de passe trop faible (6 caractères minimum).";
+  }
+  if (message.includes("rate") || message.includes("too many")) {
+    return "Trop de tentatives. Patiente quelques instants avant de réessayer.";
+  }
+  if (message.includes("network") || message.includes("fetch") || message.includes("timeout") || message.includes("trop de temps")) {
+    return mode === "register"
+      ? "Connexion au serveur impossible. Vérifie ton réseau et réessaie."
+      : "Connexion au serveur impossible. Vérifie ton réseau et réessaie.";
+  }
+  if (message.includes("not confirmed") || message.includes("email not confirmed")) {
+    return "Ton email n'est pas encore confirmé. Vérifie ta boîte de réception.";
+  }
+
+  return `Une erreur est survenue. ${rawMessage}`;
+}
+
+async function handleAuthSubmit() {
   hideAuthNotice();
+
+  if (authSubmitInFlight) {
+    return;
+  }
 
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
@@ -1599,41 +1660,74 @@ authForm.addEventListener("submit", async (event) => {
   const credentials = getCredentialsFromForm();
   if (!credentials) return;
 
+  authSubmitInFlight = true;
   authSubmit.disabled = true;
-  authSubmit.textContent = authMode === "register" ? "Creation..." : "Connexion...";
-
-  const response =
+  authSubmit.textContent =
     authMode === "register"
-      ? await supabaseClient.auth.signUp({
-          email: credentials.email,
-          password: credentials.password,
-          options: {
-            data: {
-              name: credentials.name,
-              level: credentials.level,
+      ? "Création de votre espace intelligent…"
+      : "Connexion en cours…";
+
+  const currentMode = authMode;
+
+  try {
+    const action =
+      currentMode === "register"
+        ? supabaseClient.auth.signUp({
+            email: credentials.email,
+            password: credentials.password,
+            options: {
+              data: {
+                name: credentials.name,
+                level: credentials.level,
+              },
             },
-          },
-        })
-      : await supabaseClient.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        });
+          })
+        : supabaseClient.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-  authSubmit.disabled = false;
-  setAuthMode(authMode);
+    const response = await withAuthTimeout(
+      action,
+      currentMode === "register" ? "d'inscription" : "de connexion"
+    );
 
-  if (response.error) {
-    showAuthNotice(`Erreur Supabase: ${response.error.message}`);
-    return;
+    if (response?.error) {
+      showAuthNotice(friendlyAuthErrorMessage(response.error.message, currentMode));
+      return;
+    }
+
+    if (response?.data?.session?.user) {
+      // applyAuthSession dédoublonne l'appel à showApp si onAuthStateChange
+      // déclenche le même utilisateur en parallèle.
+      applyAuthSession(response.data.session.user);
+      showToast(
+        currentMode === "register"
+          ? "Compte créé. Ton diagnostic est prêt."
+          : "Connexion réussie."
+      );
+      return;
+    }
+
+    // Pas de session : confirmation email probablement activée
+    showAuthNotice(
+      currentMode === "register"
+        ? "Compte créé. Vérifie tes emails pour confirmer ton inscription, puis connecte-toi."
+        : "Session non créée. Réessaie ou contacte le support."
+    );
+  } catch (error) {
+    console.error("Erreur auth Supabase:", error);
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, currentMode));
+  } finally {
+    authSubmitInFlight = false;
+    authSubmit.disabled = false;
+    setAuthMode(authMode);
   }
+}
 
-  if (response.data.session?.user) {
-    showApp(mapSupabaseUser(response.data.session.user));
-    showToast(authMode === "register" ? "Compte cree. Ton diagnostic est pret." : "Connexion reussie.");
-    return;
-  }
-
-  showAuthNotice("Compte cree. Verifie tes emails si la confirmation est activee dans Supabase.");
+authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  handleAuthSubmit();
 });
 
 googleAuth.addEventListener("click", async () => {
@@ -1650,27 +1744,39 @@ googleAuth.addEventListener("click", async () => {
     return;
   }
 
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo,
-    },
-  });
-
-  if (error) {
-    showAuthNotice(`Erreur Supabase: ${error.message}`);
+  googleAuth.disabled = true;
+  try {
+    const { error } = await withAuthTimeout(
+      supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      }),
+      "Google"
+    );
+    if (error) {
+      showAuthNotice(friendlyAuthErrorMessage(error.message, authMode));
+    }
+  } catch (error) {
+    console.error("Erreur Google OAuth:", error);
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, authMode));
+  } finally {
+    googleAuth.disabled = false;
   }
 });
 
 logoutBtn.addEventListener("click", async () => {
-  if (supabaseClient) {
-    await supabaseClient.auth.signOut();
+  try {
+    if (supabaseClient) {
+      await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
+    }
+  } catch (error) {
+    console.error("Erreur logout Supabase:", error);
+  } finally {
+    authPassword.value = "";
+    setAuthMode("login");
+    showAuth();
+    showToast("Session fermée.");
   }
-
-  authPassword.value = "";
-  setAuthMode("login");
-  showAuth();
-  showToast("Session fermee.");
 });
 
 document.querySelector("#diagAnswers").addEventListener("click", (event) => {
@@ -2432,6 +2538,23 @@ renderDiagnostic();
 renderPractice();
 setAuthMode("login");
 
+let lastAuthUserId = null;
+
+function applyAuthSession(user) {
+  if (user) {
+    if (lastAuthUserId === user.id) {
+      // Évite le double-render quand signUp/signIn et onAuthStateChange
+      // se déclenchent quasi simultanément pour le même utilisateur.
+      return;
+    }
+    lastAuthUserId = user.id;
+    showApp(mapSupabaseUser(user));
+  } else {
+    lastAuthUserId = null;
+    showAuth();
+  }
+}
+
 async function initializeAuth() {
   if (!supabaseClient) {
     showAuth();
@@ -2439,27 +2562,31 @@ async function initializeAuth() {
     return;
   }
 
-  const { data, error } = await supabaseClient.auth.getSession();
+  try {
+    const { data, error } = await withAuthTimeout(
+      supabaseClient.auth.getSession(),
+      "de session"
+    );
 
-  if (error) {
-    showAuth();
-    showAuthNotice(`Erreur Supabase: ${error.message}`);
-    return;
-  }
-
-  if (data.session?.user) {
-    showApp(mapSupabaseUser(data.session.user));
-  } else {
-    showAuth();
-  }
-
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      showApp(mapSupabaseUser(session.user));
-    } else {
+    if (error) {
       showAuth();
+      showAuthNotice(friendlyAuthErrorMessage(error.message, "login"));
+    } else {
+      applyAuthSession(data?.session?.user || null);
     }
-  });
+  } catch (error) {
+    console.error("Erreur getSession Supabase:", error);
+    showAuth();
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, "login"));
+  }
+
+  try {
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      applyAuthSession(session?.user || null);
+    });
+  } catch (error) {
+    console.error("Erreur onAuthStateChange Supabase:", error);
+  }
 }
 
 initializeAuth();

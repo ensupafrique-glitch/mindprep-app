@@ -30,7 +30,7 @@ const titles = {
   dashboard: "Plan du jour",
   diagnostic: "Diagnostic",
   practice: "Mini-test",
-  copies: "Correction de copie",
+  copies: "Copies à corriger",
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",
   progress: "Progression",
@@ -423,6 +423,17 @@ const loadCourseExample = document.querySelector("#loadCourseExample");
 const courseOutputTitle = document.querySelector("#courseOutputTitle");
 const criticalAlerts = document.querySelector("#criticalAlerts");
 const courseOutput = document.querySelector("#courseOutput");
+
+// Export buttons
+const courseExportActions = document.querySelector("#courseExportActions");
+const downloadCoursePdfBtn = document.querySelector("#downloadCoursePdf");
+const downloadCourseDocBtn = document.querySelector("#downloadCourseDoc");
+const copyCourseSummaryBtn = document.querySelector("#copyCourseSummary");
+const exportHint = document.querySelector("#exportHint");
+
+// Dernier modèle de cours généré (pour exports)
+let lastCourseModel = null;
+let lastCourseSubject = null;
 
 let authMode = "login";
 const supabaseClient = createSupabaseClient();
@@ -1806,27 +1817,387 @@ generateCourse.addEventListener("click", () => {
       criticalAlerts,
       courseOutput,
     });
+    lastCourseModel = model;
+    lastCourseSubject = subject;
+    enableCourseExports(true);
     generateCourse.disabled = false;
     generateCourse.textContent = "Créer le cours intelligent";
     showToast("Cours intelligent créé avec alertes et plan d'apprentissage.");
   }, 500);
 });
 
+/**
+ * Active ou désactive les boutons d'export selon qu'un cours est disponible.
+ */
+function enableCourseExports(enabled) {
+  if (!courseExportActions) return;
+  courseExportActions.dataset.disabled = enabled ? "false" : "true";
+  [downloadCoursePdfBtn, downloadCourseDocBtn, copyCourseSummaryBtn].forEach((btn) => {
+    if (btn) btn.disabled = !enabled;
+  });
+  if (exportHint) {
+    exportHint.textContent = enabled
+      ? "Cours prêt — choisis ton format d'export."
+      : "Génère d'abord un cours pour activer les exports.";
+  }
+}
+
+/**
+ * Convertit le modèle de cours généré en texte structuré (pour résumé/copie/Word).
+ */
+function buildCourseSummaryText(model, subject) {
+  if (!model) return "";
+  const lines = [];
+  const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const titleStr = courseTitle.value.trim() || model.mainIdea || "Cours intelligent";
+  lines.push(`MindPrep — Cours intelligent`);
+  lines.push(`Date : ${dateStr}`);
+  lines.push(`Matière : ${subject || lastCourseSubject || ""}`);
+  lines.push(`Titre : ${titleStr}`);
+  lines.push("");
+  lines.push(`1. Idée centrale`);
+  lines.push(model.mainIdea || "—");
+  lines.push("");
+  if (model.keywords?.length) {
+    lines.push(`2. Concepts clés`);
+    model.keywords.forEach((k) => lines.push(`  • ${k}`));
+    lines.push("");
+  }
+  if (model.schema) {
+    lines.push(`3. Modélisation / Schéma`);
+    lines.push(model.schema);
+    lines.push("");
+  }
+  if (model.relations?.length) {
+    lines.push(`4. Relations entre notions`);
+    model.relations.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.compression?.length) {
+    lines.push(`5. Compression intelligente`);
+    model.compression.forEach((c) => lines.push(`  • ${c}`));
+    lines.push("");
+  }
+  if (model.rules?.length) {
+    lines.push(`6. Règles pédagogiques`);
+    model.rules.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.reconstruction?.length) {
+    lines.push(`7. Plan de reconstruction / révision`);
+    model.reconstruction.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.applications?.length) {
+    lines.push(`8. Applications pratiques`);
+    model.applications.forEach((a) => lines.push(`  • ${a}`));
+    lines.push("");
+  }
+  if (model.alerts?.length) {
+    lines.push(`Alertes critiques`);
+    model.alerts.forEach((a) => lines.push(`  ⚠ ${a}`));
+    lines.push("");
+  }
+  lines.push("—");
+  lines.push("Généré par MindPrep — Préparation intelligente aux examens par IA");
+  return lines.join("\n");
+}
+
+/**
+ * Construit un document HTML autonome pour impression PDF (via window.print).
+ */
+function buildCoursePrintableHtml(model, subject) {
+  const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const titleStr = courseTitle.value.trim() || model.mainIdea || "Cours intelligent";
+  const escape = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const list = (arr) => `<ul>${(arr || []).map((x) => `<li>${escape(x)}</li>`).join("")}</ul>`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"/>
+    <title>MindPrep — ${escape(titleStr)}</title>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; color: #14213d; max-width: 760px; margin: 32px auto; padding: 0 24px; line-height: 1.5; }
+      header { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #0f766e; padding-bottom: 14px; margin-bottom: 18px; }
+      .logo { width: 44px; height: 44px; border-radius: 10px; background: #0f766e; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.4rem; }
+      h1 { margin: 0; font-size: 1.5rem; }
+      .meta { color: #647086; font-size: 0.9rem; margin: 0; }
+      h2 { color: #115e59; border-left: 4px solid #e9b44c; padding-left: 10px; margin-top: 24px; }
+      ul { margin: 6px 0; padding-left: 20px; }
+      .alert { background: #fee2e2; border-left: 4px solid #d94848; padding: 10px 14px; border-radius: 6px; }
+      footer { margin-top: 30px; color: #647086; font-size: 0.85rem; border-top: 1px solid #d9e1e8; padding-top: 10px; }
+      @media print { body { margin: 16px; } header { page-break-after: avoid; } h2 { page-break-after: avoid; } }
+    </style></head><body>
+    <header>
+      <div class="logo">M</div>
+      <div>
+        <h1>MindPrep — ${escape(titleStr)}</h1>
+        <p class="meta">${escape(subject || "")} • ${escape(dateStr)}</p>
+      </div>
+    </header>
+    <h2>1. Idée centrale</h2><p>${escape(model.mainIdea || "—")}</p>
+    ${model.keywords?.length ? `<h2>2. Concepts clés</h2>${list(model.keywords)}` : ""}
+    ${model.schema ? `<h2>3. Modélisation</h2><p>${escape(model.schema)}</p>` : ""}
+    ${model.relations?.length ? `<h2>4. Relations entre notions</h2>${list(model.relations)}` : ""}
+    ${model.compression?.length ? `<h2>5. Compression intelligente</h2>${list(model.compression)}` : ""}
+    ${model.rules?.length ? `<h2>6. Règles pédagogiques</h2>${list(model.rules)}` : ""}
+    ${model.reconstruction?.length ? `<h2>7. Plan de reconstruction</h2>${list(model.reconstruction)}` : ""}
+    ${model.applications?.length ? `<h2>8. Applications pratiques</h2>${list(model.applications)}` : ""}
+    ${model.alerts?.length ? `<h2>Alertes critiques</h2><div class="alert">${list(model.alerts)}</div>` : ""}
+    <footer>Généré par MindPrep — Préparation intelligente aux examens par IA</footer>
+    <script>window.addEventListener("load", () => { setTimeout(() => window.print(), 200); });</script>
+    </body></html>`;
+}
+
+/**
+ * Télécharge un blob avec le nom de fichier indiqué.
+ */
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 200);
+}
+
+/**
+ * Construit un fichier .doc compatible Word (HTML enveloppé).
+ */
+function buildCourseDocBlob(model, subject) {
+  const html = buildCoursePrintableHtml(model, subject);
+  const wrapped = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"/></head><body>${html.replace(/^[\s\S]*?<body>/i, "").replace(/<\/body>[\s\S]*$/i, "")}</body></html>`;
+  return new Blob([wrapped], { type: "application/msword" });
+}
+
+if (downloadCoursePdfBtn) {
+  downloadCoursePdfBtn.addEventListener("click", () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour exporter en PDF.");
+      return;
+    }
+    const html = buildCoursePrintableHtml(lastCourseModel, lastCourseSubject);
+    const win = window.open("", "_blank");
+    if (!win) {
+      showToast("Le navigateur a bloqué la fenêtre d'impression. Autorise les pop-ups pour exporter en PDF.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    showToast("Fenêtre d'impression ouverte — choisis 'Enregistrer en PDF'.");
+  });
+}
+
+if (downloadCourseDocBtn) {
+  downloadCourseDocBtn.addEventListener("click", () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour exporter en Word.");
+      return;
+    }
+    const blob = buildCourseDocBlob(lastCourseModel, lastCourseSubject);
+    const safeTitle = (courseTitle.value.trim() || lastCourseModel.mainIdea || "cours-mindprep").replace(/[^a-zA-Z0-9-_]+/g, "-").slice(0, 60);
+    triggerDownload(blob, `mindprep-${safeTitle}.doc`);
+    showToast("Téléchargement du fichier Word lancé.");
+  });
+}
+
+if (copyCourseSummaryBtn) {
+  copyCourseSummaryBtn.addEventListener("click", async () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour copier le résumé.");
+      return;
+    }
+    const text = buildCourseSummaryText(lastCourseModel, lastCourseSubject);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Résumé copié dans le presse-papiers.");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast("Résumé copié.");
+      } catch {
+        showToast("Impossible de copier automatiquement. Sélectionne manuellement le résumé.");
+      }
+      ta.remove();
+    }
+  });
+}
+
 document.querySelector("#notifyBtn").addEventListener("click", () => {
   showToast("Rappel intelligent activé pour ta prochaine session de 30 minutes.");
 });
 
 document.querySelector("#upgradeInline").addEventListener("click", () => {
-  setView("progress");
-  document.querySelector("#pricingPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+  openPaywall("student");
 });
 
 document.querySelector("#startTrial").addEventListener("click", () => {
-  showToast("Essai Premium lancé dans la maquette. Stripe sera connecté côté backend.");
+  // Lance directement la simulation d'activation (essai gratuit 7 jours)
+  simulatePaymentSuccess("student", null, { trial: true, durationDays: 7 });
 });
 
-document.querySelector("#proPlan").addEventListener("click", () => {
-  showToast("Plan Pro: analytics détaillées, rapports avancés et génération personnalisée.");
+const openPaywallBtn = document.querySelector("#openPaywallBtn");
+if (openPaywallBtn) {
+  openPaywallBtn.addEventListener("click", () => openPaywall());
+}
+
+/* ===== Paywall modal logic ===== */
+const paywallModal = document.querySelector("#paywallModal");
+const paywallTabs = document.querySelectorAll(".paywall-tab");
+const paywallCards = document.querySelectorAll("[data-plan-card]");
+const paywallPayment = document.querySelector("#paywallPayment");
+let selectedPlan = null;
+
+const planLabels = {
+  free: "Gratuit",
+  student: "Premium Étudiant",
+  teacher: "Premium Professeur",
+};
+
+const planFeatures = {
+  free: ["Résumé limité", "Nombre limité de cours", "Fonctions de base"],
+  student: [
+    "Résumés intelligents illimités",
+    "Fiches intelligentes",
+    "Quiz IA personnalisés",
+    "Téléchargement PDF / Word",
+    "Historique des cours sauvegardé",
+  ],
+  teacher: [
+    "Correction de copies illimitée",
+    "Analyse pédagogique détaillée",
+    "Statistiques élèves",
+    "Génération d'exercices",
+    "Tous les avantages Étudiant",
+  ],
+};
+
+function setActivePlanTab(plan) {
+  paywallTabs.forEach((t) => t.classList.toggle("active", t.dataset.plan === plan));
+  paywallCards.forEach((c) => c.classList.toggle("active", c.dataset.planCard === plan));
+}
+
+function openPaywall(plan = "student") {
+  if (!paywallModal) return;
+  setActivePlanTab(plan);
+  paywallPayment?.classList.add("is-hidden");
+  selectedPlan = null;
+  paywallModal.classList.remove("is-hidden");
+}
+
+function closePaywall() {
+  paywallModal?.classList.add("is-hidden");
+}
+
+paywallTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setActivePlanTab(tab.dataset.plan));
+});
+
+paywallModal?.querySelectorAll("[data-paywall-close]").forEach((el) => {
+  el.addEventListener("click", closePaywall);
+});
+
+paywallModal?.querySelectorAll("[data-select-plan]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const plan = btn.dataset.selectPlan;
+    if (plan === "free") {
+      closePaywall();
+      showToast("Tu continues en formule gratuite. Passe en Premium quand tu veux.");
+      return;
+    }
+    selectedPlan = plan;
+    paywallPayment?.classList.remove("is-hidden");
+    paywallPayment?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
+
+paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const method = btn.dataset.payment;
+    if (!selectedPlan) {
+      showToast("Choisis d'abord un plan Premium.");
+      return;
+    }
+    initiatePayment(selectedPlan, method);
+  });
+});
+
+/**
+ * Initie un paiement. Aucune clé API n'étant configurée, on simule un succès.
+ * Les fonctions par méthode sont des points d'intégration prêts à brancher.
+ */
+function initiatePayment(plan, method) {
+  const handlers = {
+    wave: (p) => paymentPlaceholder("Wave", p),
+    "orange-money": (p) => paymentPlaceholder("Orange Money", p),
+    "free-money": (p) => paymentPlaceholder("Free Money", p),
+    stripe: (p) => paymentPlaceholder("Stripe", p),
+    paypal: (p) => paymentPlaceholder("PayPal", p),
+  };
+  const handler = handlers[method];
+  if (!handler) return;
+  handler(plan);
+}
+
+/**
+ * Placeholder pour intégration future d'une vraie API de paiement.
+ * Affiche un toast puis simule un succès.
+ */
+function paymentPlaceholder(providerName, plan) {
+  showToast(`Initialisation du paiement via ${providerName}…`);
+  window.setTimeout(() => {
+    simulatePaymentSuccess(plan, providerName);
+  }, 900);
+}
+
+/**
+ * Simule l'activation post-paiement et affiche le modal de confirmation.
+ */
+function simulatePaymentSuccess(plan, providerName, opts = {}) {
+  closePaywall();
+  const durationDays = opts.durationDays ?? 30;
+  const isTrial = !!opts.trial;
+  const planLabel = planLabels[plan] || plan;
+  const features = planFeatures[plan] || [];
+
+  const messageEl = document.querySelector("#paymentSuccessMessage");
+  const featuresEl = document.querySelector("#paymentSuccessFeatures");
+  const successModal = document.querySelector("#paymentSuccessModal");
+
+  if (messageEl) {
+    const via = providerName ? ` via ${providerName}` : "";
+    messageEl.textContent = isTrial
+      ? `Votre essai ${planLabel} est actif pour ${durationDays} jours${via}.`
+      : `Félicitations, votre abonnement ${planLabel} est actif pour ${durationDays} jours${via}.`;
+  }
+  if (featuresEl) {
+    featuresEl.innerHTML = features.map((f) => `<li>✓ ${f}</li>`).join("");
+  }
+  if (successModal) {
+    successModal.classList.remove("is-hidden");
+  }
+
+  // Mise à jour locale du tier utilisateur (en attendant intégration backend)
+  if (plan === "student") currentUser.tier = "premium";
+  if (plan === "teacher") currentUser.tier = "pro";
+}
+
+const paymentSuccessModal = document.querySelector("#paymentSuccessModal");
+paymentSuccessModal?.querySelectorAll("[data-success-close]").forEach((el) => {
+  el.addEventListener("click", () => paymentSuccessModal.classList.add("is-hidden"));
+});
+document.querySelector("#paymentSuccessStart")?.addEventListener("click", () => {
+  paymentSuccessModal?.classList.add("is-hidden");
+  setView("dashboard");
+  showToast("Bienvenue dans l'expérience Premium !");
 });
 
 document.querySelector("#examMode").addEventListener("click", () => {

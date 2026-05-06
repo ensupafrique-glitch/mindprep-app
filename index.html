@@ -104,7 +104,7 @@
           </button>
           <button class="nav-item" data-view="copies" type="button">
             <span aria-hidden="true">▣</span>
-            Copies
+            Copies à corriger
           </button>
           <button class="nav-item" data-view="courses" type="button">
             <span aria-hidden="true">☰</span>
@@ -422,9 +422,36 @@
                 <textarea id="courseNotes" rows="8" placeholder="Colle ici ton cours. MindPrep va le compresser en mots-clés, relations, schéma et plan d’entraînement."></textarea>
               </label>
 
+              <div class="generation-preview" aria-label="Ce que MindPrep va générer">
+                <strong>MindPrep va générer&nbsp;:</strong>
+                <ul>
+                  <li>Idée centrale</li>
+                  <li>Concepts clés</li>
+                  <li>Relations entre notions</li>
+                  <li>Applications pratiques</li>
+                  <li>Quiz intelligents</li>
+                  <li>Plan de révision</li>
+                  <li>Fiche PDF téléchargeable</li>
+                </ul>
+                <span class="generation-hint">⏱ Temps estimé : 5 à 15 secondes selon la longueur du cours.</span>
+              </div>
+
               <div class="hero-actions">
                 <button class="primary-button" id="generateCourse" type="button">Créer le cours intelligent</button>
                 <button class="secondary-button" id="loadCourseExample" type="button">Exemple guidé</button>
+              </div>
+
+              <div class="course-export-actions" id="courseExportActions" aria-label="Actions d'export du cours" data-disabled="true">
+                <button class="export-button" id="downloadCoursePdf" type="button" disabled>
+                  <span aria-hidden="true">📄</span> Télécharger en PDF
+                </button>
+                <button class="export-button" id="downloadCourseDoc" type="button" disabled>
+                  <span aria-hidden="true">📝</span> Télécharger en Word
+                </button>
+                <button class="export-button" id="copyCourseSummary" type="button" disabled>
+                  <span aria-hidden="true">📋</span> Copier le résumé
+                </button>
+                <span class="export-hint" id="exportHint">Génère d'abord un cours pour activer les exports.</span>
               </div>
             </article>
 
@@ -482,13 +509,20 @@
             <article class="pricing-panel" id="pricingPanel">
               <p class="eyebrow">Premium</p>
               <h2>Révisions illimitées</h2>
-              <p>Débloque les corrections IA, les stats détaillées et le mode examen complet.</p>
-              <div class="price-row">
-                <strong>4,99 $</strong>
-                <span>par mois</span>
-              </div>
-              <button class="primary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
-              <button class="secondary-button" id="proPlan" type="button">Voir Pro à 9,99 $</button>
+              <p>Découvre les avantages premium et choisis l'offre qui te correspond.</p>
+
+              <ul class="premium-benefits" aria-label="Bénéfices premium">
+                <li>✓ Résumés intelligents illimités</li>
+                <li>✓ Téléchargement PDF / Word</li>
+                <li>✓ Quiz automatiques générés par l'IA</li>
+                <li>✓ Historique des cours sauvegardé</li>
+                <li>✓ Révision accélérée et plan personnalisé</li>
+                <li>✓ Assistance IA avancée</li>
+                <li>✓ Correction intelligente des copies</li>
+              </ul>
+
+              <button class="primary-button" id="openPaywallBtn" type="button">Voir les offres et payer</button>
+              <button class="secondary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
             </article>
           </div>
         </section>
@@ -496,6 +530,99 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="paywall-modal is-hidden" id="paywallModal" role="dialog" aria-modal="true" aria-labelledby="paywallTitle">
+      <div class="paywall-backdrop" data-paywall-close></div>
+      <div class="paywall-dialog" role="document">
+        <button class="paywall-close" type="button" aria-label="Fermer" data-paywall-close>×</button>
+
+        <header class="paywall-header">
+          <p class="eyebrow">Choisis ton offre MindPrep</p>
+          <h2 id="paywallTitle">Débloque toute la puissance de l'IA</h2>
+          <p class="paywall-sub">Tout ce dont tu as besoin pour réviser plus vite et mieux.</p>
+        </header>
+
+        <ul class="premium-benefits paywall-benefits" aria-label="Bénéfices premium">
+          <li>✓ Résumés intelligents illimités</li>
+          <li>✓ Téléchargement PDF / Word</li>
+          <li>✓ Quiz automatiques générés par l'IA</li>
+          <li>✓ Historique des cours sauvegardé</li>
+          <li>✓ Révision accélérée et plan personnalisé</li>
+          <li>✓ Assistance IA avancée</li>
+          <li>✓ Correction intelligente des copies</li>
+        </ul>
+
+        <div class="paywall-tabs" role="tablist" aria-label="Plans disponibles">
+          <button class="paywall-tab active" type="button" role="tab" data-plan="free">Gratuit</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="student">Premium Étudiant</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Premium Professeur</button>
+        </div>
+
+        <div class="paywall-cards">
+          <article class="paywall-card active" data-plan-card="free">
+            <h3>Gratuit</h3>
+            <div class="paywall-price"><strong>0 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Résumé limité (jusqu'à 1 par jour)</li>
+              <li>Nombre limité de cours</li>
+              <li>Fonctions de base</li>
+              <li>Quiz courts non personnalisés</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="free">Continuer en gratuit</button>
+          </article>
+
+          <article class="paywall-card" data-plan-card="student">
+            <h3>Premium Étudiant <span class="paywall-badge">Populaire</span></h3>
+            <div class="paywall-price"><strong>2 500 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Résumés intelligents illimités</li>
+              <li>Fiches intelligentes</li>
+              <li>Quiz IA personnalisés</li>
+              <li>Téléchargement PDF / Word</li>
+              <li>Historique des cours sauvegardé</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="student">Choisir Premium Étudiant</button>
+          </article>
+
+          <article class="paywall-card" data-plan-card="teacher">
+            <h3>Premium Professeur</h3>
+            <div class="paywall-price"><strong>7 500 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Correction de copies illimitée</li>
+              <li>Analyse pédagogique détaillée</li>
+              <li>Statistiques élèves</li>
+              <li>Génération d'exercices</li>
+              <li>Tous les avantages Étudiant</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="teacher">Choisir Premium Professeur</button>
+          </article>
+        </div>
+
+        <section class="paywall-payment is-hidden" id="paywallPayment" aria-labelledby="paywallPaymentTitle">
+          <h3 id="paywallPaymentTitle">Choisis ton mode de paiement</h3>
+          <p class="paywall-sub" id="paywallPaymentSub">Aucune clé API n'est connectée pour le moment. Les boutons ci-dessous sont des points d'intégration prêts à brancher.</p>
+          <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement">
+            <button class="payment-method" type="button" data-payment="wave"><span aria-hidden="true">🌊</span> Wave</button>
+            <button class="payment-method" type="button" data-payment="orange-money"><span aria-hidden="true">🟠</span> Orange Money</button>
+            <button class="payment-method" type="button" data-payment="free-money"><span aria-hidden="true">💚</span> Free Money</button>
+            <button class="payment-method" type="button" data-payment="stripe"><span aria-hidden="true">💳</span> Stripe</button>
+            <button class="payment-method" type="button" data-payment="paypal"><span aria-hidden="true">🅿️</span> PayPal</button>
+          </div>
+          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API ne sont pas configurées côté serveur.</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="confirm-modal is-hidden" id="paymentSuccessModal" role="dialog" aria-modal="true" aria-labelledby="paymentSuccessTitle">
+      <div class="paywall-backdrop" data-success-close></div>
+      <div class="confirm-dialog" role="document">
+        <div class="confirm-emoji" aria-hidden="true">🎉</div>
+        <h2 id="paymentSuccessTitle">Félicitations !</h2>
+        <p id="paymentSuccessMessage">Votre abonnement Premium est actif pour 30 jours.</p>
+        <ul class="confirm-features" id="paymentSuccessFeatures"></ul>
+        <button class="primary-button" type="button" id="paymentSuccessStart">Commencer</button>
+      </div>
+    </div>
 
     <!-- Supabase project config (URL et cle anon) -->
     <script src="supabase-config.js"></script>

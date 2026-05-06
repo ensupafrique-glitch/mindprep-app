@@ -1090,7 +1090,7 @@ function renderInsights(insights) {
   insightList.innerHTML = insights.map((insight) => `<p>${insight}</p>`).join("");
 }
 
-const pedagogyEngine = {
+const legacyPedagogyEngine = {
   stopWords: new Set(["cours", "avec", "pour", "dans", "cette", "comme", "plus", "moins", "entre", "leurs", "notion", "chapitre", "exemple"]),
 
   extractKeywords(text, fallbackSubject) {
@@ -1864,48 +1864,3 @@ async function initializeAuth() {
 }
 
 initializeAuth();
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("authForm");
-
-  if (form) {
-    document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("authForm");
-
-  if (form) {
-    form.addEventListener("submit", async function (e) {
-      e.preventDefault();
-
-      const email = document.getElementById("authEmail").value;
-      const password = document.getElementById("authPassword").value;
-
-      try {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-
-        alert("Connexion réussie ✅");
-        console.log(userCredential.user);
-
-      } catch (error) {
-        alert("Erreur : " + error.message);
-        console.error(error);
-      }
-    });
-  }
-});
-
-      const email = document.getElementById("authEmail")?.value;
-      const password = document.getElementById("authPassword")?.value;
-
-      console.log("Email:", email);
-      console.log("Password:", password);
-
-      alert("Connexion cliquée 🚀");
-
-      // 🔥 TEST simple pour l'instant
-      if (email && password) {
-        alert("Connexion OK (simulation)");
-      } else {
-        alert("Remplis les champs !");
-      }
-    });
-  }
-});

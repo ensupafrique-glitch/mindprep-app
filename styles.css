@@ -2904,7 +2904,8 @@ body {
 
 .account-card {
   margin-top: auto;
-  padding: 12px;
+  padding: 10px 12px;
+  gap: 10px;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
   background: #fff;
@@ -2917,10 +2918,12 @@ body {
   border-radius: 10px;
   background: linear-gradient(135deg, var(--emerald-500), var(--emerald-700));
   font-size: 0.92rem;
+  flex-shrink: 0;
 }
 
 .account-card .account-info {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .account-card strong {
@@ -2934,20 +2937,26 @@ body {
 }
 
 .account-card span {
-  font-size: 0.74rem;
+  display: block;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout-button {
+  flex-shrink: 0;
   border-radius: 8px;
   font-size: 0.74rem;
-  padding: 4px 10px;
-  min-height: 30px;
+  padding: 6px 12px;
+  min-height: 32px;
+  margin-left: 0;
 }
 
 /* --- Topbar moderne avec recherche centrale --- */
 .workspace {
-  padding: 20px 26px 56px;
+  padding: 20px 26px 96px;
 }
 
 .topbar {
@@ -3444,10 +3453,10 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow: hidden;
-  min-height: 220px;
-  padding: 26px 28px;
+  gap: 10px;
+  overflow: visible;
+  min-height: 0;
+  padding: 22px 24px 24px;
   background:
     radial-gradient(600px 200px at 0% 0%, rgba(255,255,255,0.4), transparent 60%),
     linear-gradient(135deg, var(--emerald-700), var(--emerald-500));
@@ -3468,15 +3477,20 @@ body {
 .training-banner::after {
   content: "";
   position: absolute;
-  bottom: -40px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
+  inset: auto -20px -20px auto;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
   pointer-events: none;
   z-index: 0;
+  /* Confiné via clip-path pour éviter de déborder hors de la carte. */
+  clip-path: inset(0 0 0 0 round 0);
 }
+
+/* On ré-active overflow:hidden uniquement pour clipper le décor décoratif,
+   mais le contenu reste visible grâce à un padding suffisant. */
+.training-banner { overflow: hidden; }
 
 .training-banner-icon {
   display: grid;
@@ -4693,15 +4707,23 @@ body {
 }
 
 /* ============================================================
-   Subscription / Plan badge (floating top-right)
+   Subscription / Plan badge (inséré dans la topbar à droite)
    ============================================================ */
 .subscription-status {
-  position: fixed;
-  top: 16px;
-  right: 20px;
-  z-index: 60;
-  max-width: calc(100vw - 32px);
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
   pointer-events: auto;
+}
+
+/* Fallback : si pour une raison quelconque le badge n'est pas dans la topbar
+   (parent = body), il flotte en haut à droite mais sans chevaucher la topbar. */
+body > .subscription-status {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 40;
+  max-width: calc(100vw - 32px);
 }
 
 .subscription-badge {
@@ -4775,7 +4797,7 @@ body {
 }
 
 @media (max-width: 720px) {
-  .subscription-status {
+  body > .subscription-status {
     top: 10px;
     right: 12px;
   }

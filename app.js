@@ -943,9 +943,12 @@ function applyUser(user) {
   renderInsights(content.insights);
 
   userName.textContent = displayName;
-  userLevel.textContent = profile.level;
+  // En mode invité, on raccourcit le sous-texte pour éviter le débordement
+  // dans la carte compte (« Terminale générale » est trop long à côté du bouton).
+  userLevel.textContent = isGuestMode ? "Mode invité" : profile.level;
   userAvatar.textContent = firstName.charAt(0).toUpperCase();
-  examContext.textContent = profile.examContext;
+  // Sidebar : on garde un libellé neutre cohérent quelle que soit la filière.
+  examContext.textContent = "Coach IA";
   examCountdown.textContent = profile.countdown;
 
   // Premium dashboard bindings : welcome + topbar user
@@ -1174,7 +1177,14 @@ function createSubscriptionStatusContainer() {
   container.id = 'subscriptionStatus';
   container.className = 'subscription-status';
 
-  document.body.appendChild(container);
+  // Insertion dans la topbar (avant les autres actions) pour rester aligné avec
+  // le profil utilisateur et éviter tout chevauchement avec les boutons verts.
+  const actions = document.querySelector('.topbar .topbar-actions');
+  if (actions) {
+    actions.insertBefore(container, actions.firstChild);
+  } else {
+    document.body.appendChild(container);
+  }
   return container;
 }
 

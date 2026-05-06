@@ -35,6 +35,31 @@ let currentUser = {
   subscription: null
 };
 
+// Mode invité : accès direct sans Supabase Auth (parcours "show value first")
+// Persistance simple via localStorage pour éviter de redemander à chaque chargement.
+const GUEST_STORAGE_KEY = "mindprep_guest_mode_v1";
+let isGuestMode = false;
+
+function readGuestModeFromStorage() {
+  try {
+    return window.localStorage?.getItem(GUEST_STORAGE_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function persistGuestMode(active) {
+  try {
+    if (active) {
+      window.localStorage?.setItem(GUEST_STORAGE_KEY, "1");
+    } else {
+      window.localStorage?.removeItem(GUEST_STORAGE_KEY);
+    }
+  } catch (e) {
+    // best effort
+  }
+}
+
 // Stockage du dernier rapport généré
 let lastGeneratedReport = null;
 
@@ -413,6 +438,7 @@ const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
 const authLevel = document.querySelector("#authLevel");
 const googleAuth = document.querySelector("#googleAuth");
+const guestAccess = document.querySelector("#guestAccess");
 const logoutBtn = document.querySelector("#logoutBtn");
 const userName = document.querySelector("#userName");
 const userLevel = document.querySelector("#userLevel");
@@ -904,8 +930,122 @@ function showApp(user) {
   authScreen.classList.add("is-hidden");
   appShell.classList.remove("is-hidden");
 
+  // Bannière invité (affichée uniquement si on est en mode invité)
+  renderGuestBanner();
+
   // Afficher le statut d'abonnement
   updateSubscriptionStatus();
+}
+
+/**
+ * Active le mode invité : entre dans l'app sans appel Supabase Auth.
+ * Réutilise le pipeline showApp/applyUser pour préserver toutes les
+ * fonctionnalités existantes (dashboard, training, paywall, exposé...).
+ */
+function enterGuestMode({ persist = true, silent = false } = {}) {
+  isGuestMode = true;
+  if (persist) persistGuestMode(true);
+
+  currentUser = {
+    ...currentUser,
+    id: "guest_user",
+    tier: "free",
+    isGuest: true,
+  };
+
+  // Profil minimal pour le rendu UI ; pas d'appel réseau.
+  showApp({
+    name: "Invité",
+    email: "",
+    level: "Terminale generale",
+    provider: "guest",
+  });
+
+  if (!silent) {
+    showToast("Bienvenue ! Tu es en mode invité. Crée un compte plus tard pour sauvegarder.");
+  }
+}
+
+function exitGuestMode() {
+  isGuestMode = false;
+  persistGuestMode(false);
+  currentUser = {
+    ...currentUser,
+    id: "demo_user",
+    isGuest: false,
+  };
+  removeGuestBanner();
+}
+
+/**
+ * Vérifie si une action nécessitant un compte doit être bloquée.
+ * Retourne true si l'utilisateur est en mode invité (action à intercepter),
+ * false sinon (action autorisée).
+ *
+ * @param {string} message - Message contextualisé pour le prompt
+ * @returns {boolean} true si l'action est interceptée
+ */
+function requireAccount(message) {
+  if (!isGuestMode) return false;
+  promptAccountCreation(message);
+  return true;
+}
+
+function promptAccountCreation(message) {
+  const text = message || "Créez un compte pour sauvegarder votre progression.";
+  showToast(text);
+  // Met en évidence la bannière (qui contient le bouton "Créer un compte")
+  const banner = document.querySelector("#guestBanner");
+  if (banner) {
+    banner.style.transition = "transform 0.2s ease";
+    banner.style.transform = "scale(1.02)";
+    setTimeout(() => {
+      banner.style.transform = "";
+    }, 250);
+  }
+}
+
+function renderGuestBanner() {
+  removeGuestBanner();
+  if (!isGuestMode) return;
+
+  const host = appShell;
+  if (!host) return;
+
+  const banner = document.createElement("div");
+  banner.id = "guestBanner";
+  banner.className = "guest-banner";
+  banner.innerHTML = `
+    <span class="guest-banner-icon" aria-hidden="true">✨</span>
+    <span class="guest-banner-text">
+      <strong>Mode invité actif.</strong>
+      Tu peux explorer MindPrep sans compte. Crée un compte pour sauvegarder ta progression.
+    </span>
+    <span class="guest-banner-actions">
+      <button type="button" class="guest-banner-cta" id="guestBannerSignup">Créer un compte</button>
+      <button type="button" class="guest-banner-dismiss" id="guestBannerDismiss" aria-label="Masquer">Plus tard</button>
+    </span>
+  `;
+
+  // Insertion en haut du contenu principal de l'app
+  const main = host.querySelector("main") || host;
+  main.insertBefore(banner, main.firstChild);
+
+  banner.querySelector("#guestBannerSignup")?.addEventListener("click", () => {
+    // Repasse à l'écran d'auth pour l'inscription, sans casser le mode invité
+    setAuthMode("register");
+    showAuth({ keepGuest: true });
+    showAuthNotice("Crée ton compte pour sauvegarder ta progression. Tu peux revenir au mode invité à tout moment.");
+  });
+
+  banner.querySelector("#guestBannerDismiss")?.addEventListener("click", () => {
+    banner.remove();
+  });
+}
+
+function removeGuestBanner() {
+  const existing = document.querySelector("#guestBanner");
+  if (existing) existing.remove();
 }
 
 /**
@@ -979,7 +1119,13 @@ function createSubscriptionStatusContainer() {
   return container;
 }
 
-function showAuth() {
+function showAuth(options = {}) {
+  // Si on est en mode invité, ne pas forcer l'affichage de l'auth
+  // sauf si l'appelant le demande explicitement (ex: clic "Créer un compte"
+  // depuis la bannière, ou logout volontaire).
+  if (isGuestMode && !options.force && !options.keepGuest) {
+    return;
+  }
   appShell.classList.add("is-hidden");
   authScreen.classList.remove("is-hidden");
 }
@@ -1766,18 +1912,27 @@ googleAuth.addEventListener("click", async () => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
-    if (supabaseClient) {
+    if (supabaseClient && !isGuestMode) {
       await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
     }
   } catch (error) {
     console.error("Erreur logout Supabase:", error);
   } finally {
+    const wasGuest = isGuestMode;
+    if (wasGuest) exitGuestMode();
     authPassword.value = "";
     setAuthMode("login");
-    showAuth();
-    showToast("Session fermée.");
+    showAuth({ force: true });
+    showToast(wasGuest ? "Mode invité quitté." : "Session fermée.");
   }
 });
+
+if (guestAccess) {
+  guestAccess.addEventListener("click", () => {
+    hideAuthNotice();
+    enterGuestMode();
+  });
+}
 
 document.querySelector("#diagAnswers").addEventListener("click", (event) => {
   const button = event.target.closest("[data-diag-answer]");
@@ -2422,6 +2577,9 @@ paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
 });
 
 function initiateCreditsPurchase(pack, method) {
+  if (requireAccount("Crée un compte pour acheter des crédits et les retrouver à chaque connexion.")) {
+    return;
+  }
   const providerLabels = {
     wave: "Wave",
     "orange-money": "Orange Money",
@@ -2463,6 +2621,9 @@ function initiateCreditsPurchase(pack, method) {
  * Les fonctions par méthode sont des points d'intégration prêts à brancher.
  */
 function initiatePayment(plan, method) {
+  if (requireAccount("Crée un compte pour activer ton abonnement Premium et le synchroniser sur tous tes appareils.")) {
+    return;
+  }
   const handlers = {
     wave: (p) => paymentPlaceholder("Wave", p),
     "orange-money": (p) => paymentPlaceholder("Orange Money", p),
@@ -2548,14 +2709,45 @@ function applyAuthSession(user) {
       return;
     }
     lastAuthUserId = user.id;
+    // Une vraie session prend le pas sur le mode invité.
+    if (isGuestMode) exitGuestMode();
     showApp(mapSupabaseUser(user));
   } else {
     lastAuthUserId = null;
+    // En mode invité, ne pas forcer le retour à l'écran d'auth :
+    // l'utilisateur a explicitement choisi de continuer sans compte.
+    if (isGuestMode) return;
     showAuth();
   }
 }
 
 async function initializeAuth() {
+  // Si l'utilisateur a déjà choisi le mode invité dans une session précédente,
+  // on entre directement dans l'app sans appel Supabase bloquant.
+  if (readGuestModeFromStorage()) {
+    enterGuestMode({ persist: false, silent: true });
+    // On tente quand même getSession en arrière-plan : si l'utilisateur
+    // s'est entre-temps connecté ailleurs, on bascule sur sa session réelle.
+    if (supabaseClient) {
+      try {
+        const { data } = await withAuthTimeout(
+          supabaseClient.auth.getSession(),
+          "de session"
+        );
+        if (data?.session?.user) {
+          applyAuthSession(data.session.user);
+        }
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+          applyAuthSession(session?.user || null);
+        });
+      } catch (error) {
+        // Silencieux : on est déjà en mode invité, l'app est utilisable.
+        console.warn("Supabase indisponible, mode invité conservé.", error);
+      }
+    }
+    return;
+  }
+
   if (!supabaseClient) {
     showAuth();
     showAuthNotice(getSupabaseSetupError());

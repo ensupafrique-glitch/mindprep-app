@@ -1130,7 +1130,7 @@
 
               <button class="primary-button" id="openPaywallBtn" type="button">Voir les offres et payer</button>
               <button class="secondary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
-              <p class="pricing-microcopy">Wave · Orange Money · Free Money · Stripe · PayPal</p>
+              <p class="pricing-microcopy">💳 Carte bancaire (Stripe / PayPal) · 🌍 Wave · Orange Money · Free Money · Paiement en FCFA ou en € (EUR)</p>
             </article>
           </div>
         </section>
@@ -1280,6 +1280,15 @@
           <p class="paywall-sub">Réussir tes examens, progresser semaine après semaine, faire corriger tes copies par une IA pédagogique. Choisis ce qui te correspond : abonnement, crédits à l'usage ou offre établissement.</p>
         </header>
 
+        <div class="paywall-currency" role="group" aria-label="Devise d'affichage">
+          <span class="paywall-currency-label">Afficher les prix en :</span>
+          <div class="paywall-currency-toggle" role="radiogroup">
+            <button class="paywall-currency-btn active" type="button" role="radio" aria-checked="true" data-currency="FCFA">FCFA</button>
+            <button class="paywall-currency-btn" type="button" role="radio" aria-checked="false" data-currency="EUR">EUR (€)</button>
+          </div>
+          <span class="paywall-currency-hint">Tu peux payer en FCFA (mobile money) ou en euros par carte bancaire (Stripe / PayPal).</span>
+        </div>
+
         <div class="paywall-modes" role="tablist" aria-label="Mode de paiement">
           <button class="paywall-mode active" type="button" role="tab" data-mode="subscription">
             <span class="paywall-mode-title">📅 Abonnement</span>
@@ -1314,7 +1323,9 @@
           <div class="paywall-cards">
             <article class="paywall-card active" data-plan-card="free">
               <h3>Gratuit</h3>
-              <div class="paywall-price"><strong>0 FCFA</strong><span>/ mois</span></div>
+              <div class="paywall-price">
+                <strong data-price data-fcfa="0 FCFA" data-eur="0 €">0 FCFA</strong><span>/ mois</span>
+              </div>
               <p class="paywall-pitch">Pour découvrir et tester MindPrep.</p>
               <ul>
                 <li>3 cours analysés / mois</li>
@@ -1329,7 +1340,8 @@
             <article class="paywall-card" data-plan-card="student">
               <h3>Premium Étudiant <span class="paywall-badge">Populaire</span></h3>
               <div class="paywall-price">
-                <strong>3 000 – 7 000 FCFA</strong><span>/ mois</span>
+                <strong data-price data-fcfa="3 000 – 7 000 FCFA" data-eur="≈ 5 – 11 €">3 000 – 7 000 FCFA</strong><span>/ mois</span>
+                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 5 – 11 € / mois" data-eur="3 000 – 7 000 FCFA / mois">≈ 5 – 11 € / mois</em>
               </div>
               <p class="paywall-pitch">Pour réussir tes examens et progresser sans limite.</p>
               <ul>
@@ -1348,7 +1360,8 @@
             <article class="paywall-card" data-plan-card="teacher">
               <h3>Premium Professeur</h3>
               <div class="paywall-price">
-                <strong>10 000 – 30 000 FCFA</strong><span>/ mois</span>
+                <strong data-price data-fcfa="10 000 – 30 000 FCFA" data-eur="≈ 15 – 46 €">10 000 – 30 000 FCFA</strong><span>/ mois</span>
+                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 15 – 46 € / mois" data-eur="10 000 – 30 000 FCFA / mois">≈ 15 – 46 € / mois</em>
               </div>
               <p class="paywall-pitch">Pour les enseignants qui corrigent et suivent des classes.</p>
               <ul>
@@ -1385,29 +1398,33 @@
             <div class="credits-packs">
               <h4>Choisis ton pack</h4>
               <div class="credits-pack-list">
-                <button class="credits-pack" type="button" data-credits-pack="starter" data-amount="500" data-credits="5">
+                <button class="credits-pack" type="button" data-credits-pack="starter" data-amount="500" data-credits="5" data-amount-eur="0.80">
                   <span class="credits-pack-name">Découverte</span>
-                  <span class="credits-pack-price">500 FCFA</span>
+                  <span class="credits-pack-price" data-price data-fcfa="500 FCFA" data-eur="≈ 0,80 €">500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 0,80 €" data-eur="500 FCFA">≈ 0,80 €</span>
                   <span class="credits-pack-detail">5 crédits · ~5 cours</span>
                 </button>
-                <button class="credits-pack" type="button" data-credits-pack="basic" data-amount="1000" data-credits="12">
+                <button class="credits-pack" type="button" data-credits-pack="basic" data-amount="1000" data-credits="12" data-amount-eur="1.50">
                   <span class="credits-pack-name">Étudiant</span>
-                  <span class="credits-pack-price">1 000 FCFA</span>
+                  <span class="credits-pack-price" data-price data-fcfa="1 000 FCFA" data-eur="≈ 1,50 €">1 000 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 1,50 €" data-eur="1 000 FCFA">≈ 1,50 €</span>
                   <span class="credits-pack-detail">12 crédits · +20% bonus</span>
                 </button>
-                <button class="credits-pack credits-pack--featured" type="button" data-credits-pack="boost" data-amount="2500" data-credits="35">
+                <button class="credits-pack credits-pack--featured" type="button" data-credits-pack="boost" data-amount="2500" data-credits="35" data-amount-eur="3.80">
                   <span class="credits-pack-badge">Populaire</span>
                   <span class="credits-pack-name">Boost examen</span>
-                  <span class="credits-pack-price">2 500 FCFA</span>
+                  <span class="credits-pack-price" data-price data-fcfa="2 500 FCFA" data-eur="≈ 3,80 €">2 500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 3,80 €" data-eur="2 500 FCFA">≈ 3,80 €</span>
                   <span class="credits-pack-detail">35 crédits · +40% bonus</span>
                 </button>
-                <button class="credits-pack" type="button" data-credits-pack="pro" data-amount="5000" data-credits="80">
+                <button class="credits-pack" type="button" data-credits-pack="pro" data-amount="5000" data-credits="80" data-amount-eur="7.60">
                   <span class="credits-pack-name">Concours</span>
-                  <span class="credits-pack-price">5 000 FCFA</span>
+                  <span class="credits-pack-price" data-price data-fcfa="5 000 FCFA" data-eur="≈ 7,60 €">5 000 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 7,60 €" data-eur="5 000 FCFA">≈ 7,60 €</span>
                   <span class="credits-pack-detail">80 crédits · +60% bonus</span>
                 </button>
               </div>
-              <p class="credits-payment-note">Compatible <strong>Wave</strong>, <strong>Orange Money</strong> et <strong>Free Money</strong>. Idéal si tu préfères les petits paiements ponctuels plutôt qu'un abonnement mensuel.</p>
+              <p class="credits-payment-note">💳 Carte bancaire (<strong>Stripe</strong> ou <strong>PayPal</strong>) en €, ou <strong>Wave</strong> / <strong>Orange Money</strong> / <strong>Free Money</strong> en FCFA. Idéal si tu préfères les petits paiements ponctuels plutôt qu'un abonnement mensuel.</p>
             </div>
           </div>
         </section>
@@ -1470,15 +1487,32 @@
 
         <section class="paywall-payment is-hidden" id="paywallPayment" aria-labelledby="paywallPaymentTitle">
           <h3 id="paywallPaymentTitle">Choisis ton mode de paiement</h3>
-          <p class="paywall-sub" id="paywallPaymentSub">Flow simulé : tu cliques « Passer Premium », tu choisis Wave, tu payes (par exemple) 3 000 FCFA, ton abonnement s'active automatiquement. Aucune clé API n'est branchée pour le moment — points d'intégration prêts côté serveur.</p>
-          <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement">
-            <button class="payment-method" type="button" data-payment="wave"><span aria-hidden="true">🌊</span> Wave</button>
-            <button class="payment-method" type="button" data-payment="orange-money"><span aria-hidden="true">🟠</span> Orange Money</button>
-            <button class="payment-method" type="button" data-payment="free-money"><span aria-hidden="true">💚</span> Free Money</button>
-            <button class="payment-method" type="button" data-payment="stripe"><span aria-hidden="true">💳</span> Stripe</button>
-            <button class="payment-method" type="button" data-payment="paypal"><span aria-hidden="true">🅿️</span> PayPal</button>
+          <p class="paywall-sub" id="paywallPaymentSub">Tu peux payer en <strong>FCFA</strong> via mobile money (Wave, Orange Money, Free Money) ou en <strong>euros par carte bancaire</strong> via Stripe ou PayPal. Aucune clé API n'est branchée pour le moment — les boutons sont des points d'intégration prêts côté serveur.</p>
+
+          <div class="payment-group">
+            <h4 class="payment-group-title">💳 Paiement par carte bancaire (€ EUR)</h4>
+            <p class="payment-group-sub">International &amp; Europe — Visa, Mastercard, American Express via Stripe ou PayPal.</p>
+            <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement par carte bancaire">
+              <button class="payment-method payment-method--card" type="button" data-payment="stripe" data-currency-pref="EUR">
+                <span aria-hidden="true">💳</span> Carte bancaire <small>(Stripe)</small>
+              </button>
+              <button class="payment-method payment-method--card" type="button" data-payment="paypal" data-currency-pref="EUR">
+                <span aria-hidden="true">🅿️</span> PayPal / Carte <small>(PayPal)</small>
+              </button>
+            </div>
           </div>
-          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API ne sont pas configurées côté serveur.</p>
+
+          <div class="payment-group">
+            <h4 class="payment-group-title">📱 Paiement mobile money (FCFA)</h4>
+            <p class="payment-group-sub">Afrique de l'Ouest — paiement instantané depuis ton téléphone.</p>
+            <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement mobile money">
+              <button class="payment-method" type="button" data-payment="wave" data-currency-pref="FCFA"><span aria-hidden="true">🌊</span> Wave</button>
+              <button class="payment-method" type="button" data-payment="orange-money" data-currency-pref="FCFA"><span aria-hidden="true">🟠</span> Orange Money</button>
+              <button class="payment-method" type="button" data-payment="free-money" data-currency-pref="FCFA"><span aria-hidden="true">💚</span> Free Money</button>
+            </div>
+          </div>
+
+          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API (Stripe, PayPal, Wave, Orange Money, Free Money) ne sont pas configurées côté serveur. Les boutons restent des placeholders à brancher.</p>
         </section>
       </div>
     </div>

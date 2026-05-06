@@ -1331,6 +1331,115 @@ button {
   font-size: 0.9rem;
 }
 
+/* ===== Sélecteur de devise FCFA / EUR ===== */
+.paywall-currency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 14px 0 6px;
+  padding: 10px 14px;
+  background: rgba(15, 118, 110, 0.05);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 12px;
+}
+
+.paywall-currency-label {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.paywall-currency-toggle {
+  display: inline-flex;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.paywall-currency-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.paywall-currency-btn.active {
+  background: var(--brand);
+  color: white;
+}
+
+.paywall-currency-hint {
+  flex: 1 1 220px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.paywall-price-alt {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.credits-pack-price-alt {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ===== Groupes de paiement (carte vs mobile money) ===== */
+.payment-group {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+
+.payment-group + .payment-group {
+  margin-top: 10px;
+}
+
+.payment-group-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--brand-strong);
+}
+
+.payment-group-sub {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.payment-method--card {
+  background: linear-gradient(180deg, #ffffff, #f0f9ff);
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.payment-method--card:hover {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, #f0f9ff, #dbeafe);
+}
+
+.payment-method small {
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
 /* ===== Confirmation modal ===== */
 .confirm-emoji {
   font-size: 3rem;

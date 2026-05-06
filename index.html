@@ -647,8 +647,8 @@
                     <option value="1">Niveau 1 — Facile</option>
                     <option value="2">Niveau 2 — Intermédiaire</option>
                     <option value="3">Niveau 3 — Moyen</option>
-                    <option value="4">Niveau 4 — Avancé</option>
-                    <option value="5">Niveau 5 — Difficile</option>
+                    <option value="4">Niveau 4 — Avancé ✨ Premium</option>
+                    <option value="5">Niveau 5 — Difficile ✨ Premium</option>
                   </select>
                 </label>
                 <label class="field">
@@ -691,8 +691,9 @@
             <article class="copies-table-panel">
               <div class="section-heading">
                 <div>
-                  <p class="eyebrow">Mes copies</p>
+                  <p class="eyebrow">Mes copies <span class="feature-tag feature-tag--premium">Correction IA Premium</span></p>
                   <h3>Suivi de tes rendus et corrections</h3>
+                  <p class="feature-microcopy">La correction détaillée fond + forme et l'analyse cognitive sont activées avec Premium ou avec 3 crédits par copie.</p>
                 </div>
                 <span class="time-chip"><span id="copiesCount">0</span> copies</span>
               </div>
@@ -1115,21 +1116,21 @@
 
             <article class="pricing-panel" id="pricingPanel">
               <p class="eyebrow">Premium</p>
-              <h2>Révisions illimitées</h2>
-              <p>Découvre les avantages premium et choisis l'offre qui te correspond.</p>
+              <h2>Investis dans ta réussite</h2>
+              <p>MindPrep, ce n'est pas juste des résumés : c'est de la <strong>réussite mesurable</strong>, une progression suivie, une correction intelligente et un entraînement adaptatif jusqu'au jour J.</p>
 
               <ul class="premium-benefits" aria-label="Bénéfices premium">
-                <li>✓ Résumés intelligents illimités</li>
-                <li>✓ Sujets à traiter illimités (5 niveaux)</li>
-                <li>✓ Correction IA détaillée fond + forme</li>
-                <li>✓ Progression intelligente et adaptative</li>
-                <li>✓ Téléchargement PDF / Word</li>
-                <li>✓ Historique complet des copies</li>
-                <li>✓ Coach pédagogique et conseils IA</li>
+                <li>🎯 Réussir tes examens avec un plan adapté à ton niveau</li>
+                <li>📈 Progresser visiblement chaque semaine (faiblesses ciblées)</li>
+                <li>🧠 Correction IA détaillée fond + forme sur tes copies</li>
+                <li>⚡ Sujets et entraînement adaptatif (5 niveaux)</li>
+                <li>📄 Exports PDF / Word et historique complet</li>
+                <li>🪙 Ou paie à l'usage : packs de crédits dès 500 FCFA</li>
               </ul>
 
               <button class="primary-button" id="openPaywallBtn" type="button">Voir les offres et payer</button>
               <button class="secondary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
+              <p class="pricing-microcopy">💳 Carte bancaire (Stripe / PayPal) · 🌍 Wave · Orange Money · Free Money · Paiement en FCFA ou en € (EUR)</p>
             </article>
           </div>
         </section>
@@ -1142,9 +1143,9 @@
               <div class="rail-ai-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><path d="M12 3v3"/><path d="M2 13h2"/><path d="M20 13h2"/></svg>
               </div>
-              <p class="eyebrow rail-ai-eyebrow">Assistant IA</p>
+              <p class="eyebrow rail-ai-eyebrow">Assistant IA <span class="feature-tag feature-tag--premium">Premium</span></p>
               <h3>MindPrep Coach</h3>
-              <p class="rail-ai-text">Besoin d'aide pour réviser ou comprendre un concept ?</p>
+              <p class="rail-ai-text">Besoin d'aide pour réviser ou comprendre un concept ? Le coaching IA personnalisé est inclus en Premium ou via 2 crédits par session.</p>
               <button class="rail-ai-btn" type="button" id="openAiChat">Discuter avec l'IA</button>
             </article>
 
@@ -1274,79 +1275,244 @@
         <button class="paywall-close" type="button" aria-label="Fermer" data-paywall-close>×</button>
 
         <header class="paywall-header">
-          <p class="eyebrow">Choisis ton offre MindPrep</p>
-          <h2 id="paywallTitle">Débloque toute la puissance de l'IA</h2>
-          <p class="paywall-sub">Tout ce dont tu as besoin pour réviser plus vite et mieux.</p>
+          <p class="eyebrow">Choisis ta formule MindPrep</p>
+          <h2 id="paywallTitle">Débloque ta réussite, pas juste des résumés</h2>
+          <p class="paywall-sub">Réussir tes examens, progresser semaine après semaine, faire corriger tes copies par une IA pédagogique. Choisis ce qui te correspond : abonnement, crédits à l'usage ou offre établissement.</p>
         </header>
 
-        <ul class="premium-benefits paywall-benefits" aria-label="Bénéfices premium">
-          <li>✓ Résumés intelligents illimités</li>
-          <li>✓ Téléchargement PDF / Word</li>
-          <li>✓ Quiz automatiques générés par l'IA</li>
-          <li>✓ Historique des cours sauvegardé</li>
-          <li>✓ Révision accélérée et plan personnalisé</li>
-          <li>✓ Assistance IA avancée</li>
-          <li>✓ Correction intelligente des copies</li>
-        </ul>
-
-        <div class="paywall-tabs" role="tablist" aria-label="Plans disponibles">
-          <button class="paywall-tab active" type="button" role="tab" data-plan="free">Gratuit</button>
-          <button class="paywall-tab" type="button" role="tab" data-plan="student">Étudiant Premium</button>
-          <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Professeur Premium</button>
+        <div class="paywall-currency" role="group" aria-label="Devise d'affichage">
+          <span class="paywall-currency-label">Afficher les prix en :</span>
+          <div class="paywall-currency-toggle" role="radiogroup">
+            <button class="paywall-currency-btn active" type="button" role="radio" aria-checked="true" data-currency="FCFA">FCFA</button>
+            <button class="paywall-currency-btn" type="button" role="radio" aria-checked="false" data-currency="EUR">EUR (€)</button>
+          </div>
+          <span class="paywall-currency-hint">Tu peux payer en FCFA (mobile money) ou en euros par carte bancaire (Stripe / PayPal).</span>
         </div>
 
-        <div class="paywall-cards">
-          <article class="paywall-card active" data-plan-card="free">
-            <h3>Gratuit</h3>
-            <div class="paywall-price"><strong>0 FCFA</strong><span>/ mois</span></div>
-            <ul>
-              <li>Résumé limité (1 cours par jour)</li>
-              <li>3 sujets à traiter par cours</li>
-              <li>Correction sommaire (note seule)</li>
-              <li>Quiz courts non personnalisés</li>
-            </ul>
-            <button class="primary-button" type="button" data-select-plan="free">Continuer en gratuit</button>
-          </article>
-
-          <article class="paywall-card" data-plan-card="student">
-            <h3>Étudiant Premium <span class="paywall-badge">Populaire</span></h3>
-            <div class="paywall-price"><strong>2 500 FCFA</strong><span>/ mois</span></div>
-            <ul>
-              <li>Sujets à traiter illimités (5 niveaux)</li>
-              <li>Correction IA détaillée fond + forme</li>
-              <li>Analyse avancée (Compréhension / Structure / Argumentation / Clarté)</li>
-              <li>Progression IA &amp; adaptation du niveau</li>
-              <li>Historique complet des copies</li>
-              <li>Téléchargement PDF / Word</li>
-            </ul>
-            <button class="primary-button" type="button" data-select-plan="student">Choisir Étudiant Premium</button>
-          </article>
-
-          <article class="paywall-card" data-plan-card="teacher">
-            <h3>Professeur Premium</h3>
-            <div class="paywall-price"><strong>7 500 FCFA</strong><span>/ mois</span></div>
-            <ul>
-              <li>Correction de copies illimitée</li>
-              <li>Analyse pédagogique détaillée</li>
-              <li>Statistiques élèves</li>
-              <li>Génération d'exercices</li>
-              <li>Tous les avantages Étudiant Premium</li>
-            </ul>
-            <button class="primary-button" type="button" data-select-plan="teacher">Choisir Professeur Premium</button>
-          </article>
+        <div class="paywall-modes" role="tablist" aria-label="Mode de paiement">
+          <button class="paywall-mode active" type="button" role="tab" data-mode="subscription">
+            <span class="paywall-mode-title">📅 Abonnement</span>
+            <span class="paywall-mode-sub">Tout illimité, mensuel</span>
+          </button>
+          <button class="paywall-mode" type="button" role="tab" data-mode="credits">
+            <span class="paywall-mode-title">🪙 Crédits</span>
+            <span class="paywall-mode-sub">Paie à l'usage, dès 500 FCFA</span>
+          </button>
+          <button class="paywall-mode" type="button" role="tab" data-mode="business">
+            <span class="paywall-mode-title">🏫 Établissement</span>
+            <span class="paywall-mode-sub">Écoles, centres, concours</span>
+          </button>
         </div>
+
+        <!-- ===== Mode 1 : Abonnement ===== -->
+        <section class="paywall-pane" data-pane="subscription">
+          <ul class="premium-benefits paywall-benefits" aria-label="Ce que MindPrep te fait gagner">
+            <li>🎯 Une stratégie de révision personnalisée jusqu'au jour J</li>
+            <li>📈 Progression mesurée chaque semaine, faiblesses ciblées</li>
+            <li>🧠 Correction IA détaillée fond + forme sur tes copies</li>
+            <li>⚡ Entraînement adaptatif (5 niveaux) et sujets IA</li>
+            <li>📄 Exports PDF / Word et historique complet</li>
+          </ul>
+
+          <div class="paywall-tabs" role="tablist" aria-label="Plans disponibles">
+            <button class="paywall-tab active" type="button" role="tab" data-plan="free">Gratuit</button>
+            <button class="paywall-tab" type="button" role="tab" data-plan="student">Premium Étudiant</button>
+            <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Premium Professeur</button>
+          </div>
+
+          <div class="paywall-cards">
+            <article class="paywall-card active" data-plan-card="free">
+              <h3>Gratuit</h3>
+              <div class="paywall-price">
+                <strong data-price data-fcfa="0 FCFA" data-eur="0 €">0 FCFA</strong><span>/ mois</span>
+              </div>
+              <p class="paywall-pitch">Pour découvrir et tester MindPrep.</p>
+              <ul>
+                <li>3 cours analysés / mois</li>
+                <li>Mini-tests limités</li>
+                <li>Correction sommaire (note seule)</li>
+                <li>Historique limité (7 jours)</li>
+                <li>Sujets de base (niveaux 1-2)</li>
+              </ul>
+              <button class="primary-button" type="button" data-select-plan="free">Continuer en gratuit</button>
+            </article>
+
+            <article class="paywall-card" data-plan-card="student">
+              <h3>Premium Étudiant <span class="paywall-badge">Populaire</span></h3>
+              <div class="paywall-price">
+                <strong data-price data-fcfa="3 000 – 7 000 FCFA" data-eur="≈ 5 – 11 €">3 000 – 7 000 FCFA</strong><span>/ mois</span>
+                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 5 – 11 € / mois" data-eur="3 000 – 7 000 FCFA / mois">≈ 5 – 11 € / mois</em>
+              </div>
+              <p class="paywall-pitch">Pour réussir tes examens et progresser sans limite.</p>
+              <ul>
+                <li>Résumés &amp; analyses de cours <strong>illimités</strong></li>
+                <li>Sujets IA illimités (5 niveaux, jusqu'à concours)</li>
+                <li>Corrections détaillées fond + forme</li>
+                <li>Progression intelligente &amp; adaptation du niveau</li>
+                <li>Historique complet des copies</li>
+                <li>Téléchargement PDF / Word</li>
+                <li>Coach IA &amp; conseils stratégiques</li>
+              </ul>
+              <button class="primary-button" type="button" data-select-plan="student">Choisir Premium Étudiant</button>
+              <p class="paywall-fineprint">Prix exact selon pays / promo. Sans engagement, résiliable à tout moment.</p>
+            </article>
+
+            <article class="paywall-card" data-plan-card="teacher">
+              <h3>Premium Professeur</h3>
+              <div class="paywall-price">
+                <strong data-price data-fcfa="10 000 – 30 000 FCFA" data-eur="≈ 15 – 46 €">10 000 – 30 000 FCFA</strong><span>/ mois</span>
+                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 15 – 46 € / mois" data-eur="10 000 – 30 000 FCFA / mois">≈ 15 – 46 € / mois</em>
+              </div>
+              <p class="paywall-pitch">Pour les enseignants qui corrigent et suivent des classes.</p>
+              <ul>
+                <li>Correction massive de copies (lots illimités)</li>
+                <li>Dashboard élèves &amp; statistiques de classe</li>
+                <li>Génération de devoirs et de barèmes</li>
+                <li>Suivi pédagogique individualisé</li>
+                <li>Tous les avantages Premium Étudiant</li>
+              </ul>
+              <button class="primary-button" type="button" data-select-plan="teacher">Choisir Premium Professeur</button>
+              <p class="paywall-fineprint">Tarif modulaire selon le nombre d'élèves suivis.</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- ===== Mode 2 : Crédits ===== -->
+        <section class="paywall-pane is-hidden" data-pane="credits">
+          <div class="credits-intro">
+            <h3>🪙 Paie à l'usage avec des crédits</h3>
+            <p class="paywall-sub">Pas envie de t'abonner ? Achète un pack de crédits et utilise MindPrep <strong>quand tu en as vraiment besoin</strong> — la veille d'un devoir, pour un sujet difficile, pour faire corriger une copie.</p>
+          </div>
+
+          <div class="credits-grid">
+            <div class="credits-cost-card">
+              <h4>Combien coûte chaque action ?</h4>
+              <ul class="credits-cost-list">
+                <li><span class="credits-cost-label">📚 Analyse d'un cours</span><span class="credits-cost-value">1 crédit</span></li>
+                <li><span class="credits-cost-label">🎯 Sujet difficile (niveau 4-5)</span><span class="credits-cost-value">2 crédits</span></li>
+                <li><span class="credits-cost-label">🧠 Correction d'une copie</span><span class="credits-cost-value">3 crédits</span></li>
+                <li><span class="credits-cost-label">💬 Coach IA personnalisé (15 min)</span><span class="credits-cost-value">2 crédits</span></li>
+              </ul>
+            </div>
+
+            <div class="credits-packs">
+              <h4>Choisis ton pack</h4>
+              <div class="credits-pack-list">
+                <button class="credits-pack" type="button" data-credits-pack="starter" data-amount="500" data-credits="5" data-amount-eur="0.80">
+                  <span class="credits-pack-name">Découverte</span>
+                  <span class="credits-pack-price" data-price data-fcfa="500 FCFA" data-eur="≈ 0,80 €">500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 0,80 €" data-eur="500 FCFA">≈ 0,80 €</span>
+                  <span class="credits-pack-detail">5 crédits · ~5 cours</span>
+                </button>
+                <button class="credits-pack" type="button" data-credits-pack="basic" data-amount="1000" data-credits="12" data-amount-eur="1.50">
+                  <span class="credits-pack-name">Étudiant</span>
+                  <span class="credits-pack-price" data-price data-fcfa="1 000 FCFA" data-eur="≈ 1,50 €">1 000 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 1,50 €" data-eur="1 000 FCFA">≈ 1,50 €</span>
+                  <span class="credits-pack-detail">12 crédits · +20% bonus</span>
+                </button>
+                <button class="credits-pack credits-pack--featured" type="button" data-credits-pack="boost" data-amount="2500" data-credits="35" data-amount-eur="3.80">
+                  <span class="credits-pack-badge">Populaire</span>
+                  <span class="credits-pack-name">Boost examen</span>
+                  <span class="credits-pack-price" data-price data-fcfa="2 500 FCFA" data-eur="≈ 3,80 €">2 500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 3,80 €" data-eur="2 500 FCFA">≈ 3,80 €</span>
+                  <span class="credits-pack-detail">35 crédits · +40% bonus</span>
+                </button>
+                <button class="credits-pack" type="button" data-credits-pack="pro" data-amount="5000" data-credits="80" data-amount-eur="7.60">
+                  <span class="credits-pack-name">Concours</span>
+                  <span class="credits-pack-price" data-price data-fcfa="5 000 FCFA" data-eur="≈ 7,60 €">5 000 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 7,60 €" data-eur="5 000 FCFA">≈ 7,60 €</span>
+                  <span class="credits-pack-detail">80 crédits · +60% bonus</span>
+                </button>
+              </div>
+              <p class="credits-payment-note">💳 Carte bancaire (<strong>Stripe</strong> ou <strong>PayPal</strong>) en €, ou <strong>Wave</strong> / <strong>Orange Money</strong> / <strong>Free Money</strong> en FCFA. Idéal si tu préfères les petits paiements ponctuels plutôt qu'un abonnement mensuel.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Mode 3 : Établissement / B2B ===== -->
+        <section class="paywall-pane is-hidden" data-pane="business">
+          <div class="b2b-card">
+            <div class="b2b-head">
+              <span class="b2b-badge">🏫 Pour écoles et centres de formation</span>
+              <h3>Offre établissement MindPrep</h3>
+              <p class="paywall-sub">Pour écoles, universités, centres de formation et préparations aux concours administratifs : équipez vos étudiants d'une plateforme IA d'apprentissage adaptatif.</p>
+            </div>
+
+            <div class="b2b-grid">
+              <div class="b2b-block">
+                <h4>Inclus pour l'établissement</h4>
+                <ul>
+                  <li>Dashboard pédagogique multi-classes</li>
+                  <li>Statistiques de progression par élève / par cohorte</li>
+                  <li>Correction massive des copies en lots</li>
+                  <li>Suivi pédagogique individualisé</li>
+                  <li>Génération de devoirs et bancs d'essai</li>
+                  <li>Support pédagogique dédié</li>
+                </ul>
+              </div>
+              <div class="b2b-block">
+                <h4>Pour qui ?</h4>
+                <ul>
+                  <li>Écoles secondaires &amp; lycées</li>
+                  <li>Universités et IUT</li>
+                  <li>Centres de formation professionnelle</li>
+                  <li>Prépas concours administratifs (ENA, magistrature, douanes…)</li>
+                  <li>Réseaux d'enseignants indépendants</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="b2b-pricing-row">
+              <div class="b2b-pricing-tag">
+                <span class="b2b-pricing-label">Exemple : 1 000 étudiants</span>
+                <span class="b2b-pricing-value">Tarif institutionnel sur devis</span>
+              </div>
+              <button class="primary-button" type="button" data-b2b-contact>Demander un devis établissement</button>
+            </div>
+          </div>
+
+          <div class="paywall-future">
+            <article class="future-card">
+              <span class="future-badge">À venir</span>
+              <h4>🛒 Marketplace de contenus</h4>
+              <p>Les professeurs vendront leurs sujets, corrections, packs premium, méthodologies et plans de révision. MindPrep prendra une commission sur chaque vente.</p>
+            </article>
+            <article class="future-card future-card--coach">
+              <span class="future-badge future-badge--premium">Premium haut de gamme</span>
+              <h4>🚀 Coach Réussite IA</h4>
+              <p>Programme personnalisé jusqu'au jour de l'examen : analyse fine de tes faiblesses, objectifs hebdomadaires, révision adaptative et coaching mental quotidien.</p>
+            </article>
+          </div>
+        </section>
 
         <section class="paywall-payment is-hidden" id="paywallPayment" aria-labelledby="paywallPaymentTitle">
           <h3 id="paywallPaymentTitle">Choisis ton mode de paiement</h3>
-          <p class="paywall-sub" id="paywallPaymentSub">Aucune clé API n'est connectée pour le moment. Les boutons ci-dessous sont des points d'intégration prêts à brancher.</p>
-          <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement">
-            <button class="payment-method" type="button" data-payment="wave"><span aria-hidden="true">🌊</span> Wave</button>
-            <button class="payment-method" type="button" data-payment="orange-money"><span aria-hidden="true">🟠</span> Orange Money</button>
-            <button class="payment-method" type="button" data-payment="free-money"><span aria-hidden="true">💚</span> Free Money</button>
-            <button class="payment-method" type="button" data-payment="stripe"><span aria-hidden="true">💳</span> Stripe</button>
-            <button class="payment-method" type="button" data-payment="paypal"><span aria-hidden="true">🅿️</span> PayPal</button>
+          <p class="paywall-sub" id="paywallPaymentSub">Tu peux payer en <strong>FCFA</strong> via mobile money (Wave, Orange Money, Free Money) ou en <strong>euros par carte bancaire</strong> via Stripe ou PayPal. Aucune clé API n'est branchée pour le moment — les boutons sont des points d'intégration prêts côté serveur.</p>
+
+          <div class="payment-group">
+            <h4 class="payment-group-title">💳 Paiement par carte bancaire (€ EUR)</h4>
+            <p class="payment-group-sub">International &amp; Europe — Visa, Mastercard, American Express via Stripe ou PayPal.</p>
+            <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement par carte bancaire">
+              <button class="payment-method payment-method--card" type="button" data-payment="stripe" data-currency-pref="EUR">
+                <span aria-hidden="true">💳</span> Carte bancaire <small>(Stripe)</small>
+              </button>
+              <button class="payment-method payment-method--card" type="button" data-payment="paypal" data-currency-pref="EUR">
+                <span aria-hidden="true">🅿️</span> PayPal / Carte <small>(PayPal)</small>
+              </button>
+            </div>
           </div>
-          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API ne sont pas configurées côté serveur.</p>
+
+          <div class="payment-group">
+            <h4 class="payment-group-title">📱 Paiement mobile money (FCFA)</h4>
+            <p class="payment-group-sub">Afrique de l'Ouest — paiement instantané depuis ton téléphone.</p>
+            <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement mobile money">
+              <button class="payment-method" type="button" data-payment="wave" data-currency-pref="FCFA"><span aria-hidden="true">🌊</span> Wave</button>
+              <button class="payment-method" type="button" data-payment="orange-money" data-currency-pref="FCFA"><span aria-hidden="true">🟠</span> Orange Money</button>
+              <button class="payment-method" type="button" data-payment="free-money" data-currency-pref="FCFA"><span aria-hidden="true">💚</span> Free Money</button>
+            </div>
+          </div>
+
+          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API (Stripe, PayPal, Wave, Orange Money, Free Money) ne sont pas configurées côté serveur. Les boutons restent des placeholders à brancher.</p>
         </section>
       </div>
     </div>

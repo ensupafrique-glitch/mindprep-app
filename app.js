@@ -2157,7 +2157,35 @@ const paywallModal = document.querySelector("#paywallModal");
 const paywallTabs = document.querySelectorAll(".paywall-tab");
 const paywallCards = document.querySelectorAll("[data-plan-card]");
 const paywallPayment = document.querySelector("#paywallPayment");
+const paywallModeButtons = document.querySelectorAll("[data-mode]");
+const paywallPanes = document.querySelectorAll("[data-pane]");
+const creditsPacks = document.querySelectorAll("[data-credits-pack]");
+const currencyButtons = document.querySelectorAll("[data-currency]");
 let selectedPlan = null;
+let selectedCredits = null;
+let selectedCurrency = "FCFA"; // FCFA par défaut, basculable sur EUR
+
+function applyCurrency(currency) {
+  selectedCurrency = currency === "EUR" ? "EUR" : "FCFA";
+  currencyButtons.forEach((b) => {
+    const active = b.dataset.currency === selectedCurrency;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-checked", active ? "true" : "false");
+  });
+  // Mise à jour des libellés de prix (plans + packs)
+  document.querySelectorAll("[data-price]").forEach((el) => {
+    const label = el.dataset[selectedCurrency.toLowerCase()];
+    if (label) el.textContent = label;
+  });
+  document.querySelectorAll("[data-price-alt]").forEach((el) => {
+    const label = el.dataset[selectedCurrency.toLowerCase()];
+    if (label) el.textContent = label;
+  });
+}
+
+currencyButtons.forEach((btn) => {
+  btn.addEventListener("click", () => applyCurrency(btn.dataset.currency));
+});
 
 const planLabels = {
   free: "Gratuit",
@@ -2165,23 +2193,37 @@ const planLabels = {
   teacher: "Premium Professeur",
 };
 
+const creditsPackLabels = {
+  starter: "Pack Découverte",
+  basic: "Pack Étudiant",
+  boost: "Pack Boost examen",
+  pro: "Pack Concours",
+};
+
 const planFeatures = {
-  free: ["Résumé limité", "Nombre limité de cours", "Fonctions de base"],
+  free: ["3 cours / mois", "Mini-tests limités", "Correction sommaire", "Historique limité"],
   student: [
-    "Résumés intelligents illimités",
-    "Fiches intelligentes",
-    "Quiz IA personnalisés",
+    "Résumés &amp; analyses illimités",
+    "Sujets IA illimités (5 niveaux)",
+    "Correction IA détaillée fond + forme",
+    "Progression intelligente &amp; adaptative",
     "Téléchargement PDF / Word",
-    "Historique des cours sauvegardé",
+    "Coach IA &amp; conseils stratégiques",
   ],
   teacher: [
-    "Correction de copies illimitée",
-    "Analyse pédagogique détaillée",
-    "Statistiques élèves",
-    "Génération d'exercices",
-    "Tous les avantages Étudiant",
+    "Correction massive de copies",
+    "Dashboard élèves &amp; statistiques",
+    "Génération de devoirs",
+    "Suivi pédagogique individualisé",
+    "Tous les avantages Premium Étudiant",
   ],
 };
+
+function setActivePaywallMode(mode) {
+  paywallModeButtons.forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  paywallPanes.forEach((p) => p.classList.toggle("is-hidden", p.dataset.pane !== mode));
+  paywallPayment?.classList.add("is-hidden");
+}
 
 function setActivePlanTab(plan) {
   paywallTabs.forEach((t) => t.classList.toggle("active", t.dataset.plan === plan));
@@ -2190,9 +2232,12 @@ function setActivePlanTab(plan) {
 
 function openPaywall(plan = "student") {
   if (!paywallModal) return;
+  setActivePaywallMode("subscription");
   setActivePlanTab(plan);
   paywallPayment?.classList.add("is-hidden");
   selectedPlan = null;
+  selectedCredits = null;
+  applyCurrency(selectedCurrency);
   paywallModal.classList.remove("is-hidden");
 }
 
@@ -2202,6 +2247,38 @@ function closePaywall() {
 
 paywallTabs.forEach((tab) => {
   tab.addEventListener("click", () => setActivePlanTab(tab.dataset.plan));
+});
+
+paywallModeButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setActivePaywallMode(btn.dataset.mode);
+    selectedPlan = null;
+    selectedCredits = null;
+  });
+});
+
+creditsPacks.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const packId = btn.dataset.creditsPack;
+    const amount = Number(btn.dataset.amount || 0);
+    const amountEur = Number(btn.dataset.amountEur || 0);
+    const credits = Number(btn.dataset.credits || 0);
+    creditsPacks.forEach((p) => p.classList.toggle("is-selected", p === btn));
+    selectedPlan = null;
+    selectedCredits = {
+      id: packId,
+      amount,
+      amountEur,
+      credits,
+      label: creditsPackLabels[packId] || "Pack crédits",
+    };
+    paywallPayment?.classList.remove("is-hidden");
+    paywallPayment?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
+
+paywallModal?.querySelector("[data-b2b-contact]")?.addEventListener("click", () => {
+  showToast("Demande établissement envoyée — un conseiller MindPrep te recontactera.");
 });
 
 paywallModal?.querySelectorAll("[data-paywall-close]").forEach((el) => {
@@ -2225,13 +2302,54 @@ paywallModal?.querySelectorAll("[data-select-plan]").forEach((btn) => {
 paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
   btn.addEventListener("click", () => {
     const method = btn.dataset.payment;
+    if (selectedCredits) {
+      initiateCreditsPurchase(selectedCredits, method);
+      return;
+    }
     if (!selectedPlan) {
-      showToast("Choisis d'abord un plan Premium.");
+      showToast("Choisis d'abord un plan Premium ou un pack de crédits.");
       return;
     }
     initiatePayment(selectedPlan, method);
   });
 });
+
+function initiateCreditsPurchase(pack, method) {
+  const providerLabels = {
+    wave: "Wave",
+    "orange-money": "Orange Money",
+    "free-money": "Free Money",
+    stripe: "Stripe (carte bancaire)",
+    paypal: "PayPal (carte bancaire)",
+  };
+  // Carte bancaire (Stripe / PayPal) → EUR ; mobile money → FCFA
+  const isCardMethod = method === "stripe" || method === "paypal";
+  const provider = providerLabels[method] || method;
+  const amountLabel = isCardMethod && pack.amountEur
+    ? `${pack.amountEur.toString().replace(".", ",")} €`
+    : `${pack.amount} FCFA`;
+  showToast(`Initialisation de l'achat ${pack.label} (${amountLabel}) via ${provider}… (placeholder, aucune API branchée)`);
+  window.setTimeout(() => {
+    closePaywall();
+    const successModal = document.querySelector("#paymentSuccessModal");
+    const messageEl = document.querySelector("#paymentSuccessMessage");
+    const featuresEl = document.querySelector("#paymentSuccessFeatures");
+    if (messageEl) {
+      messageEl.textContent = `${pack.label} activé : ${pack.credits} crédits ajoutés à ton compte (paiement ${amountLabel} via ${provider}).`;
+    }
+    if (featuresEl) {
+      featuresEl.innerHTML = [
+        `Analyser un cours : 1 crédit`,
+        `Sujet difficile : 2 crédits`,
+        `Correction d'une copie : 3 crédits`,
+        `Coach IA personnalisé (15 min) : 2 crédits`,
+      ]
+        .map((f) => `<li>✓ ${f}</li>`)
+        .join("");
+    }
+    if (successModal) successModal.classList.remove("is-hidden");
+  }, 900);
+}
 
 /**
  * Initie un paiement. Aucune clé API n'étant configurée, on simule un succès.
@@ -2252,10 +2370,11 @@ function initiatePayment(plan, method) {
 
 /**
  * Placeholder pour intégration future d'une vraie API de paiement.
- * Affiche un toast puis simule un succès.
+ * Aucune transaction réelle n'est effectuée — Stripe / PayPal / Wave / Orange Money / Free Money
+ * doivent être branchés côté serveur avec leurs clés API respectives.
  */
 function paymentPlaceholder(providerName, plan) {
-  showToast(`Initialisation du paiement via ${providerName}…`);
+  showToast(`Initialisation du paiement via ${providerName}… (placeholder, aucune API branchée)`);
   window.setTimeout(() => {
     simulatePaymentSuccess(plan, providerName);
   }, 900);

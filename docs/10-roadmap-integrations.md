@@ -34,12 +34,18 @@ et signalée comme telle dans l'UI (« moteur local simulé », bandeau Démo).
 | Orange Money | Paiement mobile multi-pays | 🔌 Bouton placeholder prêt |
 | Free Money | Paiement mobile Sénégal | 🔌 Bouton placeholder prêt |
 
-### Paiements — International
+### Paiements — International (carte bancaire en € EUR)
 
-| Service | Usage | État |
-|---|---|---|
-| Stripe | CB internationale, abonnements | 🔌 Bouton placeholder prêt |
-| PayPal | Paiement international | 🔌 Bouton placeholder prêt |
+| Service | Usage | Devise | État |
+|---|---|---|---|
+| **Stripe** | Carte bancaire (Visa, Mastercard, Amex) + abonnements récurrents | EUR | 🔌 Bouton placeholder prêt |
+| **PayPal** | Paiement carte bancaire ou compte PayPal, international | EUR | 🔌 Bouton placeholder prêt |
+
+> Le paiement par **carte bancaire** est l'option recommandée pour les
+> utilisateurs en Europe et à l'international. Stripe et PayPal acceptent tous
+> deux les cartes Visa / Mastercard / American Express et facturent en euros
+> (€). Le paywall MindPrep propose un toggle de devise FCFA / EUR pour aligner
+> l'affichage du prix sur la méthode de paiement choisie.
 
 > ⚠️ Aucun paiement réel n'est prélevé. Les boutons sont des points
 > d'intégration côté front. La connexion serveur (webhooks, secret keys)

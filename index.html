@@ -110,6 +110,9 @@
           </a>
           <nav class="landing-nav-links" aria-label="Sections">
             <a href="#features">Fonctionnalités</a>
+            <a href="#landing-cockpit">Concours</a>
+            <a href="#landing-cockpit">Classes</a>
+            <a href="#landing-cockpit">Préparation IA</a>
             <a href="#how">Comment ça marche</a>
             <a href="#demo">Démonstration</a>
             <a href="#pricing">Tarifs</a>
@@ -145,61 +148,137 @@
             </ul>
           </div>
 
-          <aside class="landing-mockup" aria-hidden="true">
-            <div class="landing-mockup-window">
+          <aside class="landing-mockup landing-cockpit" id="landing-cockpit" aria-label="Mini cockpit interactif MindPrep">
+            <div class="landing-mockup-window landing-cockpit-window">
               <div class="landing-mockup-bar">
                 <span></span><span></span><span></span>
-                <em>app.mindprep.ai/dashboard</em>
+                <em>app.mindprep.ai/cockpit</em>
               </div>
-              <div class="landing-mockup-body">
-                <div class="landing-mockup-side">
-                  <div class="landing-mockup-brand">
-                    <span class="landing-mockup-mark">M</span> MindPrep
+
+              <div class="landing-cockpit-body">
+                <header class="landing-cockpit-header">
+                  <div>
+                    <span class="landing-mockup-card-label">Personnalisation académique</span>
+                    <strong class="landing-cockpit-title">Configure ta préparation</strong>
                   </div>
-                  <ul>
-                    <li class="active">📊 Dashboard</li>
-                    <li>📚 Mes cours</li>
-                    <li>🧪 Mini-tests</li>
-                    <li>📝 Sujets</li>
-                    <li>✅ Correction IA</li>
-                  </ul>
+                  <span class="landing-cockpit-pulse" aria-hidden="true">● Live</span>
+                </header>
+
+                <div class="landing-cockpit-selects">
+                  <label class="landing-cockpit-field">
+                    <span>Niveau / Classe</span>
+                    <select id="lcLevel" data-lc="level">
+                      <option value="college">Collège</option>
+                      <option value="seconde">Seconde</option>
+                      <option value="premiere">Première</option>
+                      <option value="terminale" selected>Terminale</option>
+                      <option value="universite">Université</option>
+                      <option value="concours">Concours</option>
+                      <option value="pro">Professionnel</option>
+                    </select>
+                  </label>
+                  <label class="landing-cockpit-field">
+                    <span>Série</span>
+                    <select id="lcSerie" data-lc="serie">
+                      <option value="S" selected>S — Scientifique</option>
+                      <option value="L">L — Littéraire</option>
+                      <option value="ES">ES — Économique & Social</option>
+                      <option value="STG">STG — Gestion</option>
+                      <option value="Sciences">Sciences</option>
+                      <option value="Droit">Droit</option>
+                      <option value="Economie">Économie</option>
+                    </select>
+                  </label>
+                  <label class="landing-cockpit-field">
+                    <span>Concours préparé</span>
+                    <select id="lcConcours" data-lc="concours">
+                      <option value="BAC" selected>BAC</option>
+                      <option value="ADMIN">Concours administratifs</option>
+                      <option value="ENA">ENA</option>
+                      <option value="MED">Médecine</option>
+                      <option value="BTS">BTS</option>
+                      <option value="CFJ">CFJ</option>
+                    </select>
+                  </label>
+                  <label class="landing-cockpit-field">
+                    <span>Objectif</span>
+                    <select id="lcGoal" data-lc="goal">
+                      <option value="reviser" selected>Réviser rapidement</option>
+                      <option value="examen">Préparer un examen</option>
+                      <option value="entrainer">S'entraîner</option>
+                      <option value="corriger">Corriger des copies</option>
+                      <option value="ameliorer">Améliorer mes notes</option>
+                    </select>
+                  </label>
                 </div>
-                <div class="landing-mockup-main">
-                  <div class="landing-mockup-row">
-                    <div class="landing-mockup-card landing-mockup-card--score">
-                      <span class="landing-mockup-card-label">Note moyenne</span>
-                      <strong>14,5 / 20</strong>
-                      <span class="landing-mockup-card-trend">▲ +1,8 cette semaine</span>
-                    </div>
-                    <div class="landing-mockup-card landing-mockup-card--streak">
-                      <span class="landing-mockup-card-label">Série</span>
-                      <strong>7 jours</strong>
-                      <span class="landing-mockup-card-trend">🔥 streak actif</span>
+
+                <div class="landing-cockpit-stats">
+                  <div class="landing-cockpit-stat landing-cockpit-stat--a">
+                    <span class="landing-mockup-card-label">Cours analysés</span>
+                    <strong data-lc-stat="courses">12</strong>
+                    <span class="landing-mockup-card-trend">▲ IA active</span>
+                  </div>
+                  <div class="landing-cockpit-stat landing-cockpit-stat--b">
+                    <span class="landing-mockup-card-label">Progression IA</span>
+                    <strong data-lc-stat="progress">68%</strong>
+                    <span class="landing-mockup-card-trend">↗ +6 pts</span>
+                  </div>
+                  <div class="landing-cockpit-stat landing-cockpit-stat--c">
+                    <span class="landing-mockup-card-label">Série actuelle</span>
+                    <strong data-lc-stat="streak">7j</strong>
+                    <span class="landing-mockup-card-trend">🔥 streak</span>
+                  </div>
+                  <div class="landing-cockpit-stat landing-cockpit-stat--d">
+                    <span class="landing-mockup-card-label">Copies corrigées</span>
+                    <strong data-lc-stat="copies">9</strong>
+                    <span class="landing-mockup-card-trend">✅ IA</span>
+                  </div>
+                </div>
+
+                <div class="landing-cockpit-widgets">
+                  <div class="landing-cockpit-widget landing-cockpit-widget--quiz">
+                    <span class="landing-mockup-card-label">Mini-test • <em data-lc-subject>Mathématiques</em></span>
+                    <p data-lc-question>« Quelle est la dérivée de f(x) = x² ? »</p>
+                    <div class="landing-cockpit-options" data-lc-options>
+                      <span>A · 2</span>
+                      <span class="ok" data-lc-correct>B · 2x ✓</span>
+                      <span>C · x</span>
                     </div>
                   </div>
-                  <div class="landing-mockup-chart" aria-hidden="true">
-                    <span class="landing-mockup-chart-title">Progression</span>
-                    <div class="landing-mockup-bars">
-                      <span style="--h:42%"></span>
-                      <span style="--h:55%"></span>
-                      <span style="--h:48%"></span>
-                      <span style="--h:70%"></span>
-                      <span style="--h:62%"></span>
-                      <span style="--h:80%"></span>
-                      <span style="--h:88%"></span>
-                    </div>
+                  <div class="landing-cockpit-widget landing-cockpit-widget--topic">
+                    <span class="landing-mockup-card-label">Sujet recommandé · Niveau <em data-lc-topic-level>4</em></span>
+                    <p data-lc-topic>Étudier la fonction f(x) = x³ - 3x + 2 et tracer sa courbe représentative.</p>
+                    <span class="landing-cockpit-tag">📝 Sujet IA personnalisé</span>
                   </div>
-                  <div class="landing-mockup-quiz">
-                    <span class="landing-mockup-card-label">Mini-test • Philosophie</span>
-                    <p>« La liberté est-elle absence de contrainte ? »</p>
-                    <div class="landing-mockup-quiz-options">
-                      <span>A · Oui, totalement</span>
-                      <span class="ok">B · Non, elle suppose une règle ✓</span>
-                      <span>C · Cela dépend du contexte</span>
-                    </div>
-                    <span class="landing-mockup-quiz-feedback">
-                      ✨ Feedback IA · explication détaillée
-                    </span>
+                  <div class="landing-cockpit-widget landing-cockpit-widget--feedback">
+                    <span class="landing-mockup-card-label">Correction IA · feedback</span>
+                    <p data-lc-feedback>« Démarche solide, justifie davantage l'étape 2 et conclus avec un schéma. »</p>
+                    <ul class="landing-cockpit-feedback-list">
+                      <li>✓ Méthode claire</li>
+                      <li>⚠ Justification à renforcer</li>
+                      <li>↗ +1,5 pt potentiel</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="landing-cockpit-progress">
+                  <div class="landing-cockpit-progress-head">
+                    <span class="landing-mockup-card-label">Progression · <em data-lc-progress-label>Niveau Confirmé</em></span>
+                    <strong data-lc-progress-score>14,5 / 20</strong>
+                  </div>
+                  <svg class="landing-cockpit-svg" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="lcGrad" x1="0" x2="1" y1="0" y2="0">
+                        <stop offset="0%" stop-color="#10b981"/>
+                        <stop offset="100%" stop-color="#2563eb"/>
+                      </linearGradient>
+                    </defs>
+                    <polyline data-lc-polyline points="0,55 50,48 100,42 150,30 200,28 250,18 300,12"
+                      fill="none" stroke="url(#lcGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle data-lc-dot cx="300" cy="12" r="4" fill="#2563eb"/>
+                  </svg>
+                  <div class="landing-cockpit-progress-bar">
+                    <span data-lc-progress-fill style="width:72%"></span>
                   </div>
                 </div>
               </div>

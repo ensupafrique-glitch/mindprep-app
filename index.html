@@ -128,6 +128,12 @@
             </span>
             Sujets à traiter
           </button>
+          <button class="nav-item" data-view="presentation" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/><path d="M7 9l3 2-3 2"/><path d="M13 12h4"/></svg>
+            </span>
+            Exposé intelligent
+          </button>
           <button class="nav-item" data-view="copies" type="button">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 14l2 2 4-4"/></svg>
@@ -1100,6 +1106,173 @@
           </div>
         </section>
 
+        <section class="view" id="presentation" aria-labelledby="presentationTitle">
+          <div class="presentation-layout">
+            <article class="presentation-hero">
+              <p class="eyebrow">Nouveau · Présentation IA</p>
+              <h2 id="presentationTitle">Exposé intelligent</h2>
+              <p class="presentation-tagline">Transforme un sujet ou un cours en présentation claire, structurée et visuelle.</p>
+              <ul class="presentation-perks">
+                <li>Plan détaillé, intro, transitions, conclusion</li>
+                <li>Mind map visuelle et structure de slides</li>
+                <li>Graphiques recommandés et questions du jury</li>
+              </ul>
+            </article>
+
+            <article class="presentation-form-card">
+              <form id="presentationForm" class="presentation-form" autocomplete="off">
+                <label class="field">
+                  <span>Sujet de l'exposé</span>
+                  <input id="presoTopic" name="topic" type="text" placeholder="Ex. La mondialisation et ses fractures" required />
+                </label>
+                <label class="field">
+                  <span>Contenu / consignes (optionnel)</span>
+                  <textarea id="presoContent" name="content" rows="5" placeholder="Colle ton cours, tes notes ou les consignes du professeur. MindPrep en extraira la structure."></textarea>
+                </label>
+
+                <div class="preso-grid">
+                  <fieldset class="preso-fieldset">
+                    <legend>Niveau</legend>
+                    <label class="preso-radio">
+                      <input type="radio" name="presoLevel" value="standard" checked />
+                      <span>
+                        <strong>Standard</strong>
+                        <small>Plan + slides + mind map</small>
+                      </span>
+                    </label>
+                    <label class="preso-radio preso-radio--premium">
+                      <input type="radio" name="presoLevel" value="premium" />
+                      <span>
+                        <strong>Avancé <em class="preso-badge">Premium</em></strong>
+                        <small>Coaching oral, graphiques premium, niveau concours</small>
+                      </span>
+                    </label>
+                  </fieldset>
+
+                  <fieldset class="preso-fieldset">
+                    <legend>Format préféré</legend>
+                    <label class="preso-radio">
+                      <input type="radio" name="presoFormat" value="oral" checked />
+                      <span><strong>Plan oral</strong><small>Pour soutenance ou exposé en classe</small></span>
+                    </label>
+                    <label class="preso-radio">
+                      <input type="radio" name="presoFormat" value="slides" />
+                      <span><strong>Slides</strong><small>Cartes prêtes à projeter</small></span>
+                    </label>
+                    <label class="preso-radio">
+                      <input type="radio" name="presoFormat" value="mindmap" />
+                      <span><strong>Mind map</strong><small>Carte mentale visuelle</small></span>
+                    </label>
+                    <label class="preso-radio">
+                      <input type="radio" name="presoFormat" value="report" />
+                      <span><strong>Rapport visuel</strong><small>Document complet structuré</small></span>
+                    </label>
+                  </fieldset>
+                </div>
+
+                <div class="preso-actions">
+                  <button class="primary-button" id="presoGenerate" type="submit">Générer mon exposé</button>
+                  <button class="secondary-button" id="presoExample" type="button">Exemple</button>
+                  <button class="secondary-button" id="presoUpgrade" type="button">Passer Premium</button>
+                </div>
+
+                <p class="preso-helper">
+                  Les intégrations <strong>OpenAI</strong>, <strong>Claude</strong> et <strong>Napkin</strong> sont prêtes à brancher. Sans clé API, MindPrep produit un squelette structuré localement.
+                </p>
+              </form>
+            </article>
+
+            <article class="presentation-result is-hidden" id="presoResult" aria-live="polite">
+              <header class="preso-result-head">
+                <div>
+                  <p class="eyebrow" id="presoResultLevel">Standard</p>
+                  <h2 id="presoResultTitle">Ton exposé est prêt</h2>
+                </div>
+                <div class="preso-result-actions">
+                  <button class="secondary-button" id="presoCopy" type="button">Copier le plan</button>
+                  <button class="secondary-button" id="presoExport" type="button">Préparer l'export</button>
+                  <button class="primary-button is-hidden" id="presoUpgradeInline" type="button">Débloquer Premium</button>
+                </div>
+              </header>
+
+              <nav class="preso-tabs" role="tablist" aria-label="Sections de l'exposé">
+                <button class="preso-tab active" type="button" data-preso-tab="plan" role="tab">Plan</button>
+                <button class="preso-tab" type="button" data-preso-tab="slides" role="tab">Slides</button>
+                <button class="preso-tab" type="button" data-preso-tab="mindmap" role="tab">Mind map</button>
+                <button class="preso-tab" type="button" data-preso-tab="charts" role="tab">Graphiques</button>
+                <button class="preso-tab" type="button" data-preso-tab="qa" role="tab">Questions du jury</button>
+              </nav>
+
+              <div class="preso-panels">
+                <div class="preso-panel active" data-preso-panel="plan">
+                  <div class="preso-block">
+                    <p class="eyebrow">Résumé exécutif</p>
+                    <p id="presoSummary"></p>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Problématique</p>
+                    <p id="presoProblem"></p>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Introduction</p>
+                    <p id="presoIntro"></p>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Plan détaillé</p>
+                    <ol class="preso-outline" id="presoOutline"></ol>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Transitions</p>
+                    <ul class="preso-list" id="presoTransitions"></ul>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Conclusion</p>
+                    <p id="presoConclusion"></p>
+                  </div>
+                  <div class="preso-block">
+                    <p class="eyebrow">Bibliographie indicative</p>
+                    <ul class="preso-list" id="presoBiblio"></ul>
+                    <small class="preso-note">Sources à compléter et vérifier. Branche une recherche web (Perplexity, Kagi, Brave Search) pour des références à jour.</small>
+                  </div>
+                </div>
+
+                <div class="preso-panel" data-preso-panel="slides">
+                  <div class="preso-slides" id="presoSlides"></div>
+                  <p class="preso-note">Inspiré des canons modernes de présentation : un message clair par slide, hiérarchie visuelle marquée, place pour un visuel.</p>
+                </div>
+
+                <div class="preso-panel" data-preso-panel="mindmap">
+                  <div class="preso-mindmap-wrap">
+                    <svg id="presoMindmap" class="preso-mindmap" viewBox="0 0 720 420" role="img" aria-label="Mind map de l'exposé"></svg>
+                  </div>
+                  <p class="preso-note">Export visuel avancé via <strong>Napkin API</strong> à brancher (<code>generateMindMapWithNapkin</code>).</p>
+                </div>
+
+                <div class="preso-panel" data-preso-panel="charts">
+                  <div class="preso-charts" id="presoCharts"></div>
+                  <p class="preso-note">Les données affichées sont des exemples. Remplace-les par tes propres chiffres pour un rendu authentique.</p>
+                </div>
+
+                <div class="preso-panel" data-preso-panel="qa">
+                  <div class="preso-block">
+                    <p class="eyebrow">Questions probables du jury / professeur</p>
+                    <ol class="preso-outline" id="presoQuestions"></ol>
+                  </div>
+                  <div class="preso-block preso-coaching is-hidden" id="presoCoaching">
+                    <p class="eyebrow">Coaching oral <span class="preso-badge">Premium</span></p>
+                    <ul class="preso-list" id="presoCoachingList"></ul>
+                  </div>
+                  <div class="preso-block preso-locked" id="presoCoachingLocked">
+                    <p class="eyebrow">Coaching oral <span class="preso-badge">Premium</span></p>
+                    <p>Ton, débit, posture, gestion des silences et reformulations critiques sont disponibles avec l'offre Avancée.</p>
+                    <button class="secondary-button" type="button" data-preso-upgrade>Débloquer le coaching oral</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section class="view" id="progress">
           <div class="progress-layout">
             <article class="progress-panel">
@@ -1367,5 +1540,7 @@
 
     <!-- Application (ES module: imports core/, data/ et @supabase/supabase-js via esm.sh) -->
     <script type="module" src="app.js"></script>
+    <!-- Module Exposé intelligent / Présentation IA -->
+    <script type="module" src="core/presentation-engine/ui.js"></script>
   </body>
 </html>

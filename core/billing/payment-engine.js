@@ -3,6 +3,18 @@
  * Gère les paiements via Orange Money, Wave, Free Money, PayPal, Stripe
  */
 
+// Browser-safe env reader. In Node, reads from process.env. In the browser,
+// reads from window.MINDPREP_CONFIG (optional) so secrets stay server-side.
+function getEnv(key) {
+    if (typeof process !== 'undefined' && process.env && process.env[key] != null) {
+        return process.env[key];
+    }
+    if (typeof window !== 'undefined' && window.MINDPREP_CONFIG && window.MINDPREP_CONFIG[key] != null) {
+        return window.MINDPREP_CONFIG[key];
+    }
+    return null;
+}
+
 export class PaymentEngine {
     constructor() {
         this.providers = {
@@ -14,8 +26,8 @@ export class PaymentEngine {
                 processingTime: '2-5 minutes',
                 config: {
                     apiUrl: 'https://api.orange.com/orange-money',
-                    clientId: process.env.ORANGE_MONEY_CLIENT_ID,
-                    clientSecret: process.env.ORANGE_MONEY_CLIENT_SECRET
+                    clientId: getEnv('ORANGE_MONEY_CLIENT_ID'),
+                    clientSecret: getEnv('ORANGE_MONEY_CLIENT_SECRET')
                 }
             },
             wave: {
@@ -26,7 +38,7 @@ export class PaymentEngine {
                 processingTime: 'Instantané',
                 config: {
                     apiUrl: 'https://api.wave.com/v1',
-                    apiKey: process.env.WAVE_API_KEY
+                    apiKey: getEnv('WAVE_API_KEY')
                 }
             },
             free_money: {
@@ -37,8 +49,8 @@ export class PaymentEngine {
                 processingTime: '1-3 minutes',
                 config: {
                     apiUrl: 'https://api.free.sn/money',
-                    merchantId: process.env.FREE_MONEY_MERCHANT_ID,
-                    apiKey: process.env.FREE_MONEY_API_KEY
+                    merchantId: getEnv('FREE_MONEY_MERCHANT_ID'),
+                    apiKey: getEnv('FREE_MONEY_API_KEY')
                 }
             },
             paypal: {
@@ -48,9 +60,9 @@ export class PaymentEngine {
                 fees: { percentage: 2.9, fixed: 0.30 },
                 processingTime: 'Instantané',
                 config: {
-                    clientId: process.env.PAYPAL_CLIENT_ID,
-                    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
-                    mode: process.env.NODE_ENV === 'production' ? 'live' : 'sandbox'
+                    clientId: getEnv('PAYPAL_CLIENT_ID'),
+                    clientSecret: getEnv('PAYPAL_CLIENT_SECRET'),
+                    mode: getEnv('NODE_ENV') === 'production' ? 'live' : 'sandbox'
                 }
             },
             stripe: {
@@ -60,9 +72,9 @@ export class PaymentEngine {
                 fees: { percentage: 2.9, fixed: 0.30 },
                 processingTime: 'Instantané',
                 config: {
-                    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-                    secretKey: process.env.STRIPE_SECRET_KEY,
-                    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+                    publishableKey: getEnv('STRIPE_PUBLISHABLE_KEY'),
+                    secretKey: getEnv('STRIPE_SECRET_KEY'),
+                    webhookSecret: getEnv('STRIPE_WEBHOOK_SECRET')
                 }
             }
         };

@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MindPrep - Préparation intelligente aux examens par IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -80,53 +83,90 @@
     </section>
 
     <div class="app-shell is-hidden" id="appShell">
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Ouvrir la navigation">
+        <span aria-hidden="true">☰</span>
+      </button>
+
       <aside class="sidebar" aria-label="Navigation principale">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true">M</div>
           <div>
             <strong>MindPrep</strong>
-            <span id="examContext">Bac Maths</span>
+            <span id="examContext">Préparation intelligente par IA</span>
           </div>
         </div>
 
+        <p class="nav-section-label">Espace</p>
         <nav class="nav-list">
           <button class="nav-item active" data-view="dashboard" type="button">
-            <span aria-hidden="true">⌂</span>
-            Tableau
-          </button>
-          <button class="nav-item" data-view="diagnostic" type="button">
-            <span aria-hidden="true">◎</span>
-            Diagnostic
-          </button>
-          <button class="nav-item" data-view="practice" type="button">
-            <span aria-hidden="true">✓</span>
-            Mini-test
-          </button>
-          <button class="nav-item" data-view="training" type="button">
-            <span aria-hidden="true">★</span>
-            Entraînement intelligent
-          </button>
-          <button class="nav-item" data-view="copies" type="button">
-            <span aria-hidden="true">▣</span>
-            Copies à corriger
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+            </span>
+            Dashboard
           </button>
           <button class="nav-item" data-view="courses" type="button">
-            <span aria-hidden="true">☰</span>
-            Cours facilité
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h11"/></svg>
+            </span>
+            Mes cours
           </button>
-          <button class="nav-item" data-view="review" type="button">
-            <span aria-hidden="true">↺</span>
-            Erreurs
+          <button class="nav-item" data-view="courses" data-nav-key="generation" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+            </span>
+            Génération intelligente
+          </button>
+          <button class="nav-item" data-view="practice" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            Mini-tests
+          </button>
+          <button class="nav-item" data-view="training" data-nav-key="topics" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 21H3v-7"/><path d="M21 3l-9 9"/><path d="M3 21l9-9"/></svg>
+            </span>
+            Sujets à traiter
+          </button>
+          <button class="nav-item" data-view="copies" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 14l2 2 4-4"/></svg>
+            </span>
+            Copies à corriger
           </button>
           <button class="nav-item" data-view="progress" type="button">
-            <span aria-hidden="true">▥</span>
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-7"/></svg>
+            </span>
             Progression
+          </button>
+          <button class="nav-item" data-view="training" data-nav-key="history" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-7L3 9"/><path d="M12 7v5l3 2"/></svg>
+            </span>
+            Historique
+          </button>
+        </nav>
+
+        <p class="nav-section-label">Compte</p>
+        <nav class="nav-list">
+          <button class="nav-item nav-item--accent" id="navPremium" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.39 4.84L20 8l-4 3.9.94 5.5L12 14.77 7.06 17.4 8 11.9 4 8l5.61-1.16z"/></svg>
+            </span>
+            Premium
+          </button>
+          <button class="nav-item" data-view="settings" type="button">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span>
+            Paramètres
           </button>
         </nav>
 
         <div class="account-card">
           <div class="avatar" id="userAvatar" aria-hidden="true">S</div>
-          <div>
+          <div class="account-info">
             <strong id="userName">Sarah</strong>
             <span id="userLevel">Terminale générale</span>
           </div>
@@ -136,20 +176,200 @@
 
       <main class="workspace">
         <header class="topbar">
-          <div>
-            <p class="eyebrow">Préparation intelligente aux examens par IA</p>
-            <h1 id="page-title">Plan du jour</h1>
+          <div class="topbar-search">
+            <span class="topbar-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            </span>
+            <input class="topbar-search-input" id="globalSearch" type="search" placeholder="Rechercher un cours, sujet, test…" aria-label="Recherche globale" />
+            <kbd class="topbar-search-kbd" aria-hidden="true">⌘ K</kbd>
           </div>
           <div class="topbar-actions">
-            <button class="icon-button" id="notifyBtn" type="button" aria-label="Notifications">
-              <span aria-hidden="true">!</span>
+            <button class="icon-button icon-button--bell" id="notifyBtn" type="button" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16v-5a6 6 0 1 0-12 0v5l-2 2h16z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+              <span class="bell-dot" aria-hidden="true"></span>
             </button>
-            <button class="primary-button" data-view-trigger="practice" type="button">Lancer 15 min</button>
+            <div class="topbar-user">
+              <div class="topbar-user-info">
+                <strong id="topbarUserName">Ibrahima MBENGUE</strong>
+                <span class="topbar-user-status" id="topbarUserStatus">Étudiant Premium</span>
+              </div>
+              <div class="topbar-avatar" id="topbarAvatar" aria-hidden="true">I</div>
+            </div>
           </div>
         </header>
 
-        <section class="view active" id="dashboard" aria-labelledby="page-title">
-          <div class="dashboard-grid">
+        <div class="page-title-row" hidden>
+          <h1 id="page-title">Plan du jour</h1>
+        </div>
+
+        <div class="workspace-grid">
+          <div class="workspace-main">
+
+        <section class="view active" id="dashboard" aria-labelledby="welcomeTitle">
+          <div class="welcome-block">
+            <h1 class="welcome-title" id="welcomeTitle">Bonjour <span id="welcomeName">Ibrahima</span> <span class="welcome-wave" aria-hidden="true">👋</span></h1>
+            <p class="welcome-sub">Prêt pour une nouvelle session de révision ?</p>
+          </div>
+
+          <div class="stat-cards">
+            <article class="stat-card">
+              <div class="stat-icon stat-icon--emerald" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h11"/></svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Cours analysés</span>
+                <strong class="stat-value" id="statCourses">12</strong>
+                <span class="stat-trend stat-trend--up">+3 cette semaine</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon stat-icon--blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-7"/></svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Progression globale</span>
+                <strong class="stat-value" id="statProgress">78%</strong>
+                <div class="stat-bar"><div class="stat-bar-fill" id="statProgressBar" style="width:78%"></div></div>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon stat-icon--orange" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s4 5 4 9a4 4 0 1 1-8 0c0-2 1-3 1-3s2 1 2 4"/></svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Jours de suite</span>
+                <strong class="stat-value" id="statStreak">7</strong>
+                <span class="stat-trend">Garde ton rythme 🔥</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon stat-icon--violet" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 14l2 2 4-4"/></svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Copies corrigées</span>
+                <strong class="stat-value" id="statCopies">5</strong>
+                <span class="stat-trend stat-trend--up">+2 cette semaine</span>
+              </div>
+            </article>
+          </div>
+
+          <section class="continue-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Continuer</p>
+                <h2>Continuer ma préparation</h2>
+              </div>
+              <button class="text-button" data-view-trigger="courses" type="button">Voir tout</button>
+            </div>
+            <div class="course-cards">
+              <article class="course-card">
+                <div class="course-card-icon course-card-icon--emerald" aria-hidden="true">📊</div>
+                <div class="course-card-body">
+                  <span class="course-card-tag">Comptabilité</span>
+                  <h3>Comptabilité générale</h3>
+                  <div class="course-card-progress">
+                    <div class="course-card-bar"><div class="course-card-bar-fill" style="width:64%"></div></div>
+                    <span>64%</span>
+                  </div>
+                </div>
+                <button class="primary-button course-card-cta" data-view-trigger="courses" type="button">Reprendre</button>
+              </article>
+              <article class="course-card">
+                <div class="course-card-icon course-card-icon--blue" aria-hidden="true">⚖️</div>
+                <div class="course-card-body">
+                  <span class="course-card-tag">Droit</span>
+                  <h3>Droit des obligations</h3>
+                  <div class="course-card-progress">
+                    <div class="course-card-bar"><div class="course-card-bar-fill" style="width:42%"></div></div>
+                    <span>42%</span>
+                  </div>
+                </div>
+                <button class="primary-button course-card-cta" data-view-trigger="courses" type="button">Reprendre</button>
+              </article>
+              <article class="course-card">
+                <div class="course-card-icon course-card-icon--violet" aria-hidden="true">📈</div>
+                <div class="course-card-body">
+                  <span class="course-card-tag">Économie</span>
+                  <h3>Économie d'entreprise</h3>
+                  <div class="course-card-progress">
+                    <div class="course-card-bar"><div class="course-card-bar-fill" style="width:81%"></div></div>
+                    <span>81%</span>
+                  </div>
+                </div>
+                <button class="primary-button course-card-cta" data-view-trigger="courses" type="button">Reprendre</button>
+              </article>
+              <button class="course-add-card" type="button" data-view-trigger="courses" aria-label="Ajouter un cours">
+                <span class="course-add-plus" aria-hidden="true">+</span>
+                <strong>Ajouter un cours</strong>
+                <span class="course-add-hint">Importe ou colle ton cours</span>
+              </button>
+            </div>
+          </section>
+
+          <div class="dashboard-bottom">
+            <section class="activity-section">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Activités récentes</p>
+                  <h2>Ce que tu as fait dernièrement</h2>
+                </div>
+              </div>
+              <ul class="activity-timeline">
+                <li class="activity-item">
+                  <span class="activity-dot activity-dot--ok" aria-hidden="true"></span>
+                  <div class="activity-body">
+                    <strong>Copie corrigée — Dissertation Philosophie</strong>
+                    <span>14/20 — Bonne structure, à approfondir l'argumentation.</span>
+                  </div>
+                  <span class="activity-time">Il y a 2 h</span>
+                </li>
+                <li class="activity-item">
+                  <span class="activity-dot activity-dot--blue" aria-hidden="true"></span>
+                  <div class="activity-body">
+                    <strong>Mini-test — Probabilités conditionnelles</strong>
+                    <span>8/10 réponses correctes en 9 min.</span>
+                  </div>
+                  <span class="activity-time">Hier</span>
+                </li>
+                <li class="activity-item">
+                  <span class="activity-dot activity-dot--violet" aria-hidden="true"></span>
+                  <div class="activity-body">
+                    <strong>Sujet traité — Cas pratique Droit des contrats</strong>
+                    <span>Niveau 3 — Correction reçue.</span>
+                  </div>
+                  <span class="activity-time">Il y a 2 j</span>
+                </li>
+                <li class="activity-item">
+                  <span class="activity-dot activity-dot--emerald" aria-hidden="true"></span>
+                  <div class="activity-body">
+                    <strong>Cours analysé — Seuil de rentabilité</strong>
+                    <span>Idée centrale, concepts, plan de révision générés.</span>
+                  </div>
+                  <span class="activity-time">Il y a 3 j</span>
+                </li>
+              </ul>
+            </section>
+
+            <section class="training-banner">
+              <div class="training-banner-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+              </div>
+              <div class="training-banner-body">
+                <p class="eyebrow training-banner-eyebrow">Entraînement intelligent</p>
+                <h2>Des sujets adaptés à ton niveau pour progresser efficacement.</h2>
+                <p class="training-banner-sub">MindPrep choisit les bons sujets, te corrige fond et forme, puis ajuste la difficulté en continu.</p>
+                <div class="training-banner-actions">
+                  <button class="primary-button" data-discover-topics type="button">Découvrir des sujets</button>
+                  <button class="secondary-button secondary-button--on-dark" data-view-trigger="practice" type="button">Lancer un mini-test</button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <details class="legacy-dashboard">
+            <summary>Voir le diagnostic détaillé (heatmap, plan d'action, signaux IA)</summary>
+            <div class="dashboard-grid">
             <article class="hero-panel">
               <div class="hero-copy">
                 <span class="status-pill" id="examCountdown">J-90 avant le Bac</span>
@@ -233,6 +453,56 @@
                 <p>Les erreurs en probabilités viennent surtout de la lecture de l’énoncé.</p>
                 <p>Ta progression est stable depuis 6 jours. Garde le rythme.</p>
               </div>
+            </article>
+          </div>
+          </details>
+        </section>
+
+        <section class="view" id="settings" aria-label="Paramètres">
+          <div class="settings-layout">
+            <article class="settings-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Paramètres</p>
+                  <h2>Personnalise ton expérience MindPrep</h2>
+                </div>
+              </div>
+              <div class="settings-grid">
+                <div class="setting-row">
+                  <div>
+                    <strong>Notifications</strong>
+                    <span>Recevoir un rappel quotidien de révision.</span>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked /><span></span></label>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <strong>Mode sombre (bientôt)</strong>
+                    <span>Une interface plus douce pour les sessions de nuit.</span>
+                  </div>
+                  <label class="toggle is-disabled"><input type="checkbox" disabled /><span></span></label>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <strong>Langue</strong>
+                    <span>Interface, corrections et exports.</span>
+                  </div>
+                  <select class="setting-select"><option>Français</option><option>English (bientôt)</option></select>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <strong>Niveau d'études</strong>
+                    <span id="settingsLevel">Terminale générale</span>
+                  </div>
+                  <button class="secondary-button" type="button" data-view-trigger="dashboard">Modifier</button>
+                </div>
+              </div>
+            </article>
+            <article class="settings-panel">
+              <p class="eyebrow">Confidentialité</p>
+              <h3>Tes données t'appartiennent</h3>
+              <p>MindPrep ne partage jamais tes copies. Les corrections sont générées localement en démo.</p>
+              <button class="secondary-button" type="button" id="settingsLogout">Se déconnecter</button>
             </article>
           </div>
         </section>
@@ -863,7 +1133,137 @@
             </article>
           </div>
         </section>
+
+          </div><!-- /.workspace-main -->
+
+          <aside class="workspace-rail" aria-label="Assistant et progression">
+            <article class="rail-card rail-ai">
+              <div class="rail-ai-glow" aria-hidden="true"></div>
+              <div class="rail-ai-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><path d="M12 3v3"/><path d="M2 13h2"/><path d="M20 13h2"/></svg>
+              </div>
+              <p class="eyebrow rail-ai-eyebrow">Assistant IA</p>
+              <h3>MindPrep Coach</h3>
+              <p class="rail-ai-text">Besoin d'aide pour réviser ou comprendre un concept ?</p>
+              <button class="rail-ai-btn" type="button" id="openAiChat">Discuter avec l'IA</button>
+            </article>
+
+            <article class="rail-card">
+              <div class="rail-card-head">
+                <div>
+                  <p class="eyebrow">Cette semaine</p>
+                  <h3>Progression hebdomadaire</h3>
+                </div>
+                <span class="rail-pill" id="weeklyDelta">+12%</span>
+              </div>
+              <div class="weekly-chart" aria-label="Progression sur 7 jours">
+                <svg viewBox="0 0 280 120" preserveAspectRatio="none" role="img" aria-label="Courbe de progression">
+                  <defs>
+                    <linearGradient id="weeklyGrad" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,90 L40,72 L80,80 L120,55 L160,50 L200,38 L240,30 L280,18 L280,120 L0,120 Z" fill="url(#weeklyGrad)"/>
+                  <path d="M0,90 L40,72 L80,80 L120,55 L160,50 L200,38 L240,30 L280,18" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g fill="#10b981">
+                    <circle cx="0" cy="90" r="3"/>
+                    <circle cx="40" cy="72" r="3"/>
+                    <circle cx="80" cy="80" r="3"/>
+                    <circle cx="120" cy="55" r="3"/>
+                    <circle cx="160" cy="50" r="3"/>
+                    <circle cx="200" cy="38" r="3"/>
+                    <circle cx="240" cy="30" r="3"/>
+                    <circle cx="280" cy="18" r="4" stroke="#fff" stroke-width="2"/>
+                  </g>
+                </svg>
+                <div class="weekly-axis">
+                  <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="rail-card">
+              <div class="rail-card-head">
+                <div>
+                  <p class="eyebrow">Objectifs</p>
+                  <h3>Prochains objectifs</h3>
+                </div>
+              </div>
+              <ul class="goals-list">
+                <li class="goal-item">
+                  <label class="goal-check">
+                    <input type="checkbox" />
+                    <span class="goal-box" aria-hidden="true"></span>
+                  </label>
+                  <div class="goal-body">
+                    <strong>Traiter 3 sujets difficiles</strong>
+                    <div class="goal-bar"><div class="goal-bar-fill" style="width:33%"></div></div>
+                    <span class="goal-meta">1/3 traités</span>
+                  </div>
+                </li>
+                <li class="goal-item">
+                  <label class="goal-check">
+                    <input type="checkbox" />
+                    <span class="goal-box" aria-hidden="true"></span>
+                  </label>
+                  <div class="goal-body">
+                    <strong>Obtenir 80% aux mini-tests</strong>
+                    <div class="goal-bar"><div class="goal-bar-fill" style="width:72%"></div></div>
+                    <span class="goal-meta">72% en moyenne</span>
+                  </div>
+                </li>
+                <li class="goal-item">
+                  <label class="goal-check">
+                    <input type="checkbox" />
+                    <span class="goal-box" aria-hidden="true"></span>
+                  </label>
+                  <div class="goal-body">
+                    <strong>Corriger 2 copies</strong>
+                    <div class="goal-bar"><div class="goal-bar-fill" style="width:50%"></div></div>
+                    <span class="goal-meta">1/2 corrigées</span>
+                  </div>
+                </li>
+              </ul>
+            </article>
+          </aside>
+        </div><!-- /.workspace-grid -->
       </main>
+    </div>
+
+    <div class="ai-drawer is-hidden" id="aiDrawer" role="dialog" aria-modal="true" aria-label="Assistant IA MindPrep">
+      <div class="ai-drawer-backdrop" data-ai-close></div>
+      <div class="ai-drawer-panel" role="document">
+        <header class="ai-drawer-head">
+          <div class="ai-drawer-title">
+            <div class="rail-ai-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/></svg>
+            </div>
+            <div>
+              <strong>MindPrep Coach</strong>
+              <span>Assistant pédagogique IA</span>
+            </div>
+          </div>
+          <button class="paywall-close" type="button" aria-label="Fermer" data-ai-close>×</button>
+        </header>
+        <div class="ai-drawer-body" id="aiDrawerBody">
+          <div class="ai-msg ai-msg--bot">
+            <p>Bonjour 👋 Je suis ton coach MindPrep. Je peux résumer un cours, t'expliquer un concept, te suggérer un sujet adapté ou commenter ta dernière copie. Que veux-tu faire ?</p>
+          </div>
+          <div class="ai-quick-replies">
+            <button type="button" data-ai-suggest="Explique-moi le seuil de rentabilité">Explique-moi un concept</button>
+            <button type="button" data-ai-suggest="Donne-moi un sujet adapté">Sujet adapté à mon niveau</button>
+            <button type="button" data-ai-suggest="Que dois-je travailler aujourd'hui ?">Que travailler aujourd'hui ?</button>
+          </div>
+        </div>
+        <form class="ai-drawer-form" id="aiDrawerForm">
+          <input type="text" id="aiDrawerInput" placeholder="Pose ta question à MindPrep…" autocomplete="off" />
+          <button class="primary-button" type="submit" aria-label="Envoyer">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+          </button>
+        </form>
+        <p class="ai-drawer-hint">Démo locale : hook prêt à brancher sur OpenAI / Claude / Anthropic.</p>
+      </div>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

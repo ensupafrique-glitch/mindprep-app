@@ -15,7 +15,24 @@ import {
   levelById,
   DIFFICULTY_LEVELS,
 } from "./core/training-engine/index.js";
-import { createClient as createSupabaseClientSdk } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+
+// Supabase est volontairement importé en lazy/dynamique : un import statique
+// vers https://esm.sh bloque l'exécution du module app.js (et donc tout le
+// rendu) jusqu'à ce que la chaîne d'imports SDK soit téléchargée. Le SDK est
+// désormais chargé à la demande (ouverture popup d'inscription, scheduleBackgroundAuth)
+// pour garantir un premier rendu instantané, même hors ligne ou avec un CDN lent.
+const SUPABASE_SDK_URL = "https://esm.sh/@supabase/supabase-js@2.45.4";
+let supabaseSdkPromise = null;
+function loadSupabaseSdk() {
+  if (!supabaseSdkPromise) {
+    supabaseSdkPromise = import(/* @vite-ignore */ SUPABASE_SDK_URL).catch((error) => {
+      console.warn("Chargement Supabase SDK indisponible — mode invité conservé.", error);
+      supabaseSdkPromise = null;
+      return null;
+    });
+  }
+  return supabaseSdkPromise;
+}
 
 // Initialisation des moteurs de monétisation
 const accessEngine = new AccessEngine();
@@ -476,8 +493,11 @@ const exportHint = document.querySelector("#exportHint");
 let lastCourseModel = null;
 let lastCourseSubject = null;
 
-let authMode = "login";
-const supabaseClient = createSupabaseClient();
+let authMode = "register";
+// Supabase Auth est désormais optionnel et chargé en arrière-plan UNIQUEMENT
+// après le premier rendu de l'app (cf. initializeAuth). On ne l'initialise
+// jamais dans le flux de bootstrap synchrone pour éviter tout freeze à l'ouverture.
+let supabaseClient = null;
 let selectedCopyFile = null;
 
 /**
@@ -680,6 +700,9 @@ async function exportReportToPDF() {
     showToast('Aucun rapport disponible pour l\'export');
     return;
   }
+  if (requireAccount("Crée un compte gratuit pour exporter ta correction en PDF.")) {
+    return;
+  }
 
   try {
     showToast('Génération du PDF en cours...');
@@ -715,6 +738,9 @@ async function exportReportToPDF() {
 async function exportReportToDOCX() {
   if (!lastGeneratedReport) {
     showToast('Aucun rapport disponible pour l\'export');
+    return;
+  }
+  if (requireAccount("Crée un compte gratuit pour exporter ta correction en Word.")) {
     return;
   }
 
@@ -814,24 +840,42 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
-function createSupabaseClient() {
+function hasSupabaseConfig() {
   const config = window.MINDPREP_SUPABASE || {};
-  const hasConfig =
+  return Boolean(
     config.url &&
-    config.anonKey &&
-    !config.url.includes("YOUR_PROJECT_REF") &&
-    !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY");
+      config.anonKey &&
+      !config.url.includes("YOUR_PROJECT_REF") &&
+      !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY"),
+  );
+}
 
-  if (!hasConfig) {
-    return null;
-  }
+/**
+ * Initialise le client Supabase à la demande (lazy + dynamic import).
+ * Aucune initialisation au chargement de la page : ni le SDK ni le client
+ * ne sont chargés tant qu'un besoin réel n'apparaît pas (popup d'inscription,
+ * tentative de session, paywall…). Toute défaillance reste silencieuse —
+ * l'app continue de fonctionner en mode invité.
+ *
+ * Retourne une promesse résolue avec le client (ou null en cas d'échec ou
+ * si la config Supabase est absente).
+ */
+async function ensureSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  if (!hasSupabaseConfig()) return null;
 
+  const sdk = await loadSupabaseSdk();
+  if (!sdk || typeof sdk.createClient !== "function") return null;
+  if (supabaseClient) return supabaseClient;
+
+  const config = window.MINDPREP_SUPABASE || {};
   try {
-    return createSupabaseClientSdk(config.url, config.anonKey);
+    supabaseClient = sdk.createClient(config.url, config.anonKey);
   } catch (error) {
     console.error("Echec d'initialisation du client Supabase:", error);
-    return null;
+    supabaseClient = null;
   }
+  return supabaseClient;
 }
 
 function showAuthNotice(message) {
@@ -899,9 +943,12 @@ function applyUser(user) {
   renderInsights(content.insights);
 
   userName.textContent = displayName;
-  userLevel.textContent = profile.level;
+  // En mode invité, on raccourcit le sous-texte pour éviter le débordement
+  // dans la carte compte (« Terminale générale » est trop long à côté du bouton).
+  userLevel.textContent = isGuestMode ? "Mode invité" : profile.level;
   userAvatar.textContent = firstName.charAt(0).toUpperCase();
-  examContext.textContent = profile.examContext;
+  // Sidebar : on garde un libellé neutre cohérent quelle que soit la filière.
+  examContext.textContent = "Coach IA";
   examCountdown.textContent = profile.countdown;
 
   // Premium dashboard bindings : welcome + topbar user
@@ -927,8 +974,9 @@ function applyUser(user) {
 
 function showApp(user) {
   applyUser(user);
-  authScreen.classList.add("is-hidden");
-  appShell.classList.remove("is-hidden");
+  // L'app shell est toujours visible — la modale d'inscription, si elle
+  // est ouverte, vient se superposer par-dessus sans la masquer.
+  if (appShell) appShell.classList.remove("is-hidden");
 
   // Bannière invité (affichée uniquement si on est en mode invité)
   renderGuestBanner();
@@ -942,7 +990,7 @@ function showApp(user) {
  * Réutilise le pipeline showApp/applyUser pour préserver toutes les
  * fonctionnalités existantes (dashboard, training, paywall, exposé...).
  */
-function enterGuestMode({ persist = true, silent = false } = {}) {
+function enterGuestMode({ persist = true, silent = true } = {}) {
   isGuestMode = true;
   if (persist) persistGuestMode(true);
 
@@ -962,7 +1010,7 @@ function enterGuestMode({ persist = true, silent = false } = {}) {
   });
 
   if (!silent) {
-    showToast("Bienvenue ! Tu es en mode invité. Crée un compte plus tard pour sauvegarder.");
+    showToast("Tu testes MindPrep en mode invité. Crée un compte plus tard pour sauvegarder.");
   }
 }
 
@@ -991,10 +1039,28 @@ function requireAccount(message) {
   return true;
 }
 
+function openSignupModal({ message, mode = "register" } = {}) {
+  if (!authScreen) return;
+  setAuthMode(mode);
+  authScreen.classList.remove("is-hidden");
+  authScreen.removeAttribute("hidden");
+  if (message) showAuthNotice(message);
+  // Lazy-initialise Supabase à l'ouverture de la modale (premier vrai besoin).
+  // Fire-and-forget : le SDK se charge en arrière-plan, le formulaire reste utilisable.
+  ensureSupabaseClient().catch(() => {});
+}
+
+function closeSignupModal() {
+  if (!authScreen) return;
+  authScreen.classList.add("is-hidden");
+  authScreen.setAttribute("hidden", "");
+  hideAuthNotice();
+}
+
 function promptAccountCreation(message) {
-  const text = message || "Créez un compte pour sauvegarder votre progression.";
-  showToast(text);
-  // Met en évidence la bannière (qui contient le bouton "Créer un compte")
+  const text = message || "Crée un compte gratuit pour sauvegarder et exporter ton travail.";
+  openSignupModal({ message: text, mode: "register" });
+  // Met en évidence la bannière (si visible) pour le rappel ergonomique
   const banner = document.querySelector("#guestBanner");
   if (banner) {
     banner.style.transition = "transform 0.2s ease";
@@ -1019,7 +1085,7 @@ function renderGuestBanner() {
     <span class="guest-banner-icon" aria-hidden="true">✨</span>
     <span class="guest-banner-text">
       <strong>Mode invité actif.</strong>
-      Tu peux explorer MindPrep sans compte. Crée un compte pour sauvegarder ta progression.
+      Créez un compte pour sauvegarder et exporter vos résultats.
     </span>
     <span class="guest-banner-actions">
       <button type="button" class="guest-banner-cta" id="guestBannerSignup">Créer un compte</button>
@@ -1032,10 +1098,11 @@ function renderGuestBanner() {
   main.insertBefore(banner, main.firstChild);
 
   banner.querySelector("#guestBannerSignup")?.addEventListener("click", () => {
-    // Repasse à l'écran d'auth pour l'inscription, sans casser le mode invité
-    setAuthMode("register");
-    showAuth({ keepGuest: true });
-    showAuthNotice("Crée ton compte pour sauvegarder ta progression. Tu peux revenir au mode invité à tout moment.");
+    // Ouvre la popup d'inscription par-dessus l'app, sans interrompre la session invité.
+    openSignupModal({
+      mode: "register",
+      message: "Crée ton compte pour sauvegarder ta progression. Tu peux fermer cette fenêtre à tout moment.",
+    });
   });
 
   banner.querySelector("#guestBannerDismiss")?.addEventListener("click", () => {
@@ -1064,12 +1131,7 @@ async function updateSubscriptionStatus() {
     const remainingReports = Math.max(0, tierData.limits.reportsPerMonth - usage);
 
     statusContainer.innerHTML = `
-      <div class="subscription-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; ${
-        tier === 'free' ? 'background: #f0f0f0; color: #666;' :
-        tier === 'basic' ? 'background: #e3f2fd; color: #1976d2;' :
-        tier === 'premium' ? 'background: #fff3e0; color: #f57c00;' :
-        'background: #f3e5f5; color: #7b1fa2;'
-      }">
+      <div class="subscription-badge subscription-badge--${tier}">
         <span class="tier-icon">${
           tier === 'free' ? '🆓' :
           tier === 'basic' ? '⭐' :
@@ -1077,7 +1139,7 @@ async function updateSubscriptionStatus() {
           '👑'
         }</span>
         <span class="tier-name">${tierData.name}</span>
-        <span class="usage-info" style="font-weight: normal;">
+        <span class="usage-info">
           ${tier === 'free' ?
             `${remainingReports} rapports restants` :
             totalCredits > 0 ?
@@ -1085,7 +1147,7 @@ async function updateSubscriptionStatus() {
               'Rapports illimités'
           }
         </span>
-        ${tier === 'free' ? '<span class="upgrade-hint" style="font-size: 12px; opacity: 0.8;">↗️ Upgrade</span>' : ''}
+        ${tier === 'free' ? '<span class="upgrade-hint">↗️ Upgrade</span>' : ''}
       </div>
     `;
 
@@ -1113,33 +1175,39 @@ async function updateSubscriptionStatus() {
 function createSubscriptionStatusContainer() {
   const container = document.createElement('div');
   container.id = 'subscriptionStatus';
-  container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 100;';
+  container.className = 'subscription-status';
 
-  document.body.appendChild(container);
+  // Insertion dans la topbar (avant les autres actions) pour rester aligné avec
+  // le profil utilisateur et éviter tout chevauchement avec les boutons verts.
+  const actions = document.querySelector('.topbar .topbar-actions');
+  if (actions) {
+    actions.insertBefore(container, actions.firstChild);
+  } else {
+    document.body.appendChild(container);
+  }
   return container;
 }
 
 function showAuth(options = {}) {
-  // Si on est en mode invité, ne pas forcer l'affichage de l'auth
-  // sauf si l'appelant le demande explicitement (ex: clic "Créer un compte"
-  // depuis la bannière, ou logout volontaire).
+  // Auth différée : on n'affiche jamais d'écran plein page bloquant.
+  // Un éventuel besoin d'auth (logout volontaire, clic explicite) ouvre
+  // la modale "Sauvegarde ton travail ✨" par-dessus l'app.
   if (isGuestMode && !options.force && !options.keepGuest) {
     return;
   }
-  appShell.classList.add("is-hidden");
-  authScreen.classList.remove("is-hidden");
+  openSignupModal({ mode: authMode || "register" });
 }
 
 function setAuthMode(mode) {
   authMode = mode;
   const isRegister = mode === "register";
 
-  loginTab.classList.toggle("active", !isRegister);
-  registerTab.classList.toggle("active", isRegister);
-  nameField.classList.toggle("is-hidden", !isRegister);
-  levelField.classList.toggle("is-hidden", !isRegister);
-  authSubmit.textContent = isRegister ? "Créer mon compte" : "Se connecter";
-  authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+  if (loginTab) loginTab.classList.toggle("active", !isRegister);
+  if (registerTab) registerTab.classList.toggle("active", isRegister);
+  if (nameField) nameField.classList.toggle("is-hidden", !isRegister);
+  if (levelField) levelField.classList.toggle("is-hidden", !isRegister);
+  if (authSubmit) authSubmit.textContent = isRegister ? "Créer mon compte" : "Se connecter";
+  if (authPassword) authPassword.autocomplete = isRegister ? "new-password" : "current-password";
 }
 
 function getSupabaseSetupError() {
@@ -1798,6 +1866,7 @@ async function handleAuthSubmit() {
     return;
   }
 
+  await ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1879,6 +1948,7 @@ authForm.addEventListener("submit", (event) => {
 googleAuth.addEventListener("click", async () => {
   hideAuthNotice();
 
+  await ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1912,6 +1982,7 @@ googleAuth.addEventListener("click", async () => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
+    if (!isGuestMode) await ensureSupabaseClient();
     if (supabaseClient && !isGuestMode) {
       await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
     }
@@ -1919,20 +1990,39 @@ logoutBtn.addEventListener("click", async () => {
     console.error("Erreur logout Supabase:", error);
   } finally {
     const wasGuest = isGuestMode;
-    if (wasGuest) exitGuestMode();
-    authPassword.value = "";
-    setAuthMode("login");
-    showAuth({ force: true });
-    showToast(wasGuest ? "Mode invité quitté." : "Session fermée.");
+    if (!wasGuest) {
+      // Logout d'un compte réel : on retombe en mode invité, pas sur un écran d'auth.
+      enterGuestMode({ silent: true });
+    }
+    if (authPassword) authPassword.value = "";
+    setAuthMode("register");
+    showToast(wasGuest ? "Tu peux fermer la modale pour rester en mode invité." : "Session fermée. Tu es repassé en mode invité.");
+    if (wasGuest) {
+      openSignupModal({ mode: "register" });
+    }
   }
 });
 
+// Le bouton "Essayer sans compte" a disparu : l'app entre désormais
+// directement en mode invité au chargement (cf. initializeAuth).
 if (guestAccess) {
   guestAccess.addEventListener("click", () => {
     hideAuthNotice();
-    enterGuestMode();
+    closeSignupModal();
+    if (!isGuestMode) enterGuestMode({ silent: true });
   });
 }
+
+// Fermeture de la popup d'inscription (croix, backdrop, touche Échap).
+document.querySelector("#authClose")?.addEventListener("click", () => closeSignupModal());
+document.querySelectorAll("[data-signup-close]").forEach((el) => {
+  el.addEventListener("click", () => closeSignupModal());
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && authScreen && !authScreen.classList.contains("is-hidden")) {
+    closeSignupModal();
+  }
+});
 
 document.querySelector("#diagAnswers").addEventListener("click", (event) => {
   const button = event.target.closest("[data-diag-answer]");
@@ -2342,6 +2432,9 @@ if (downloadCoursePdfBtn) {
       showToast("Génère d'abord un cours pour exporter en PDF.");
       return;
     }
+    if (requireAccount("Crée un compte gratuit pour télécharger ce cours en PDF et retrouver tes exports plus tard.")) {
+      return;
+    }
     const html = buildCoursePrintableHtml(lastCourseModel, lastCourseSubject);
     const win = window.open("", "_blank");
     if (!win) {
@@ -2359,6 +2452,9 @@ if (downloadCourseDocBtn) {
   downloadCourseDocBtn.addEventListener("click", () => {
     if (!lastCourseModel) {
       showToast("Génère d'abord un cours pour exporter en Word.");
+      return;
+    }
+    if (requireAccount("Crée un compte gratuit pour télécharger ce cours en Word.")) {
       return;
     }
     const blob = buildCourseDocBlob(lastCourseModel, lastCourseSubject);
@@ -2697,7 +2793,7 @@ document.querySelector("#examMode").addEventListener("click", () => {
 renderTopics();
 renderDiagnostic();
 renderPractice();
-setAuthMode("login");
+setAuthMode("register");
 
 let lastAuthUserId = null;
 
@@ -2711,73 +2807,88 @@ function applyAuthSession(user) {
     lastAuthUserId = user.id;
     // Une vraie session prend le pas sur le mode invité.
     if (isGuestMode) exitGuestMode();
+    closeSignupModal();
     showApp(mapSupabaseUser(user));
   } else {
     lastAuthUserId = null;
-    // En mode invité, ne pas forcer le retour à l'écran d'auth :
-    // l'utilisateur a explicitement choisi de continuer sans compte.
-    if (isGuestMode) return;
-    showAuth();
+    // Pas de session : on reste en mode invité — jamais d'écran de login plein page.
+    if (!isGuestMode) {
+      enterGuestMode({ silent: true });
+    }
   }
 }
 
-async function initializeAuth() {
-  // Si l'utilisateur a déjà choisi le mode invité dans une session précédente,
-  // on entre directement dans l'app sans appel Supabase bloquant.
-  if (readGuestModeFromStorage()) {
-    enterGuestMode({ persist: false, silent: true });
-    // On tente quand même getSession en arrière-plan : si l'utilisateur
-    // s'est entre-temps connecté ailleurs, on bascule sur sa session réelle.
-    if (supabaseClient) {
-      try {
-        const { data } = await withAuthTimeout(
-          supabaseClient.auth.getSession(),
-          "de session"
-        );
-        if (data?.session?.user) {
-          applyAuthSession(data.session.user);
-        }
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-          applyAuthSession(session?.user || null);
-        });
-      } catch (error) {
-        // Silencieux : on est déjà en mode invité, l'app est utilisable.
+function initializeAuth() {
+  // OBJECTIF : zéro friction. L'utilisateur entre directement dans l'app
+  // en mode invité au chargement. Aucun appel Supabase n'est effectué
+  // dans ce chemin synchrone — Supabase est branché en arrière-plan,
+  // après le premier rendu, et toute défaillance est silencieuse.
+  enterGuestMode({ persist: true, silent: true });
+
+  // Branchement Supabase strictement non-bloquant : on attend que la page
+  // soit complètement chargée (window.load) PUIS un délai supplémentaire
+  // avant même de déclencher le chargement dynamique du SDK. Sinon,
+  // l'`import()` dynamique des dizaines de modules esm.sh maintient le
+  // navigateur en état "loading" et empêche DOMContentLoaded de se
+  // déclencher — ce qui faisait freezer la page à l'arrivée.
+  const scheduleBackgroundAuth = () => {
+    Promise.resolve()
+      .then(() => ensureSupabaseClient())
+      .then((client) => {
+        if (!client) return;
+        return withAuthTimeout(client.auth.getSession(), "de session")
+          .then(({ data }) => {
+            if (data?.session?.user) {
+              applyAuthSession(data.session.user);
+            }
+          })
+          .then(() => {
+            try {
+              client.auth.onAuthStateChange((_event, session) => {
+                applyAuthSession(session?.user || null);
+              });
+            } catch (error) {
+              console.warn("onAuthStateChange indisponible:", error);
+            }
+          });
+      })
+      .catch((error) => {
         console.warn("Supabase indisponible, mode invité conservé.", error);
-      }
-    }
-    return;
-  }
+      });
+  };
 
-  if (!supabaseClient) {
-    showAuth();
-    showAuthNotice(getSupabaseSetupError());
-    return;
-  }
-
-  try {
-    const { data, error } = await withAuthTimeout(
-      supabaseClient.auth.getSession(),
-      "de session"
-    );
-
-    if (error) {
-      showAuth();
-      showAuthNotice(friendlyAuthErrorMessage(error.message, "login"));
+  const armBackgroundAuth = () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(scheduleBackgroundAuth, { timeout: 4000 });
     } else {
-      applyAuthSession(data?.session?.user || null);
+      window.setTimeout(scheduleBackgroundAuth, 2000);
     }
-  } catch (error) {
-    console.error("Erreur getSession Supabase:", error);
-    showAuth();
-    showAuthNotice(friendlyAuthErrorMessage(error?.message, "login"));
-  }
+  };
 
-  try {
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-      applyAuthSession(session?.user || null);
-    });
-  } catch (error) {
-    console.error("Erreur onAuthStateChange Supabase:", error);
+  if (typeof window === "undefined") return;
+  // Garde-fou : tant que document.readyState n'est pas au moins "interactive",
+  // le navigateur considère la page comme "loading". Si on déclenche un
+  // import() dynamique de modules ESM (chaîne Supabase / esm.sh) pendant
+  // cet état, Chromium n'émet jamais DOMContentLoaded et la page reste figée.
+  // On attend donc explicitement DOMContentLoaded (ou load) avant d'amorcer
+  // quoi que ce soit en réseau.
+  const triggerOnce = (() => {
+    let armed = false;
+    return () => {
+      if (armed) return;
+      armed = true;
+      window.setTimeout(armBackgroundAuth, 800);
+    };
+  })();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", triggerOnce, { once: true });
+    // Filet de sécurité si DOMContentLoaded ne se déclenche pas (rare).
+    window.addEventListener("load", triggerOnce, { once: true });
+  } else {
+    // DOM déjà parsé : on peut programmer en toute sécurité.
+    triggerOnce();
   }
 }
 
@@ -3379,14 +3490,23 @@ function refreshTopbarPremiumStatus() {
   const badge = document.querySelector(".subscription-badge .tier-name");
   if (badge) {
     const name = badge.textContent.trim();
-    status.textContent = /gratuit|free/i.test(name) ? "Étudiant" : `${name}`;
+    const next = /gratuit|free/i.test(name) ? "Étudiant" : `${name}`;
+    if (status.textContent !== next) status.textContent = next;
   }
 }
-const _origUpdateSub = typeof updateSubscriptionStatus === "function" ? updateSubscriptionStatus : null;
-if (_origUpdateSub) {
-  // Observe le DOM pour refresh
-  const obs = new MutationObserver(refreshTopbarPremiumStatus);
-  document.body && obs.observe(document.body, { childList: true, subtree: true });
+// Auparavant un MutationObserver écoutait childList+subtree sur document.body
+// pour rafraîchir le badge — mais comme refreshTopbarPremiumStatus modifie
+// lui-même le DOM (#topbarUserStatus), cela créait une boucle infinie de
+// microtâches qui empêchait DOMContentLoaded de se déclencher (page figée).
+// On programme désormais un rafraîchissement périodique très léger, suffisant
+// pour synchroniser le badge avec le statut Supabase quand celui-ci change.
+if (typeof updateSubscriptionStatus === "function" && typeof window !== "undefined") {
+  const startTopbarRefresh = () => window.setInterval(refreshTopbarPremiumStatus, 1500);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startTopbarRefresh, { once: true });
+  } else {
+    startTopbarRefresh();
+  }
 }
 
 // Mise à jour des cartes stats avec données réelles si disponibles

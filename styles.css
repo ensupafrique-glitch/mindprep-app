@@ -2904,7 +2904,8 @@ body {
 
 .account-card {
   margin-top: auto;
-  padding: 12px;
+  padding: 10px 12px;
+  gap: 10px;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
   background: #fff;
@@ -2917,10 +2918,12 @@ body {
   border-radius: 10px;
   background: linear-gradient(135deg, var(--emerald-500), var(--emerald-700));
   font-size: 0.92rem;
+  flex-shrink: 0;
 }
 
 .account-card .account-info {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .account-card strong {
@@ -2934,20 +2937,26 @@ body {
 }
 
 .account-card span {
-  font-size: 0.74rem;
+  display: block;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout-button {
+  flex-shrink: 0;
   border-radius: 8px;
   font-size: 0.74rem;
-  padding: 4px 10px;
-  min-height: 30px;
+  padding: 6px 12px;
+  min-height: 32px;
+  margin-left: 0;
 }
 
 /* --- Topbar moderne avec recherche centrale --- */
 .workspace {
-  padding: 20px 26px 32px;
+  padding: 20px 26px 96px;
 }
 
 .topbar {
@@ -3086,7 +3095,8 @@ body {
 
 /* --- Welcome block --- */
 .welcome-block {
-  margin-bottom: 4px;
+  margin: 0 0 4px;
+  padding: 4px 0 8px;
 }
 
 .welcome-title {
@@ -3364,6 +3374,14 @@ body {
   box-shadow: var(--shadow-xs);
 }
 
+.activity-section {
+  padding-bottom: 26px;
+}
+
+.activity-timeline > .activity-item:last-child {
+  padding-bottom: 4px;
+}
+
 .activity-timeline {
   list-style: none;
   margin: 0;
@@ -3435,8 +3453,10 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow: hidden;
+  gap: 10px;
+  overflow: visible;
+  min-height: 0;
+  padding: 22px 24px 24px;
   background:
     radial-gradient(600px 200px at 0% 0%, rgba(255,255,255,0.4), transparent 60%),
     linear-gradient(135deg, var(--emerald-700), var(--emerald-500));
@@ -3444,17 +3464,33 @@ body {
   border-color: transparent;
 }
 
+.training-banner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
 .training-banner::after {
   content: "";
   position: absolute;
-  bottom: -40px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
+  inset: auto -20px -20px auto;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
   pointer-events: none;
+  z-index: 0;
+  /* Confiné via clip-path pour éviter de déborder hors de la carte. */
+  clip-path: inset(0 0 0 0 round 0);
 }
+
+/* On ré-active overflow:hidden uniquement pour clipper le décor décoratif,
+   mais le contenu reste visible grâce à un padding suffisant. */
+.training-banner { overflow: hidden; }
 
 .training-banner-icon {
   display: grid;
@@ -3472,8 +3508,14 @@ body {
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.3;
+  line-height: 1.35;
   color: #fff;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  display: block;
+  max-width: 100%;
 }
 
 .training-banner-eyebrow {
@@ -4130,7 +4172,7 @@ body {
     place-items: center;
   }
   .workspace {
-    padding: 70px 16px 24px;
+    padding: 70px 16px 48px;
   }
   .topbar {
     grid-template-columns: minmax(0, 1fr);
@@ -4544,4 +4586,227 @@ body {
   .preso-result-head { flex-direction: column; align-items: flex-start; }
   .preso-tabs { overflow-x: auto; flex-wrap: nowrap; }
   .preso-tab { white-space: nowrap; }
+}
+
+/* ==========================================================================
+ * Signup modal — popup d'inscription "Sauvegarde ton travail ✨"
+ * Affichée seulement quand l'utilisateur déclenche une action premium
+ * (export PDF, achat, sauvegarde…). Non bloquante : ferme avec ×, backdrop,
+ * Échap, ou bouton de fermeture, et l'utilisateur reste en mode invité.
+ * ========================================================================== */
+
+.signup-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.signup-modal.is-hidden { display: none; }
+
+.signup-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.signup-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  animation: signup-modal-in 0.18s ease-out;
+}
+
+@keyframes signup-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.signup-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+}
+.signup-modal-close:hover { background: #f1f5f9; color: var(--ink); }
+
+.signup-modal-header { text-align: center; }
+.signup-modal-emoji { font-size: 2rem; line-height: 1; margin-bottom: 8px; }
+.signup-modal-header h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.4rem, 3vw, 1.7rem);
+  line-height: 1.15;
+}
+.signup-modal-lead { margin: 6px 0 6px; color: var(--muted); }
+.signup-modal-benefits {
+  margin: 0 auto 14px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  display: inline-block;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.signup-modal-benefits li {
+  position: relative;
+  padding-left: 20px;
+  margin: 4px 0;
+}
+.signup-modal-benefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.signup-modal-actions { margin-top: 14px; }
+.signup-modal-actions .auth-tabs { margin: 18px 0 14px; }
+.signup-modal-actions .auth-form { gap: 10px; }
+.signup-google {
+  width: 100%;
+  margin-bottom: 4px;
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.signup-google:hover { background: #f8fafc; }
+
+.signup-modal-hint {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (max-width: 480px) {
+  .signup-modal { padding: 12px; }
+  .signup-modal-dialog { padding: 22px 18px 18px; border-radius: 14px; }
+}
+
+/* ============================================================
+   Subscription / Plan badge (inséré dans la topbar à droite)
+   ============================================================ */
+.subscription-status {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  pointer-events: auto;
+}
+
+/* Fallback : si pour une raison quelconque le badge n'est pas dans la topbar
+   (parent = body), il flotte en haut à droite mais sans chevaucher la topbar. */
+body > .subscription-status {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 40;
+  max-width: calc(100vw - 32px);
+}
+
+.subscription-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: #ffffff;
+  color: #475569;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.subscription-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.subscription-badge--free {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: rgba(5, 150, 105, 0.18);
+}
+
+.subscription-badge--basic {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: rgba(29, 78, 216, 0.18);
+}
+
+.subscription-badge--premium {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: rgba(194, 65, 12, 0.18);
+}
+
+.subscription-badge--enterprise {
+  background: #faf5ff;
+  color: #7e22ce;
+  border-color: rgba(126, 34, 206, 0.18);
+}
+
+.subscription-badge .tier-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.subscription-badge .tier-name {
+  font-weight: 700;
+}
+
+.subscription-badge .usage-info {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.subscription-badge .upgrade-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.85;
+  padding-left: 4px;
+  border-left: 1px solid rgba(15, 23, 42, 0.1);
+  margin-left: 2px;
+}
+
+@media (max-width: 720px) {
+  body > .subscription-status {
+    top: 10px;
+    right: 12px;
+  }
+  .subscription-badge {
+    font-size: 0.76rem;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .subscription-badge .usage-info {
+    display: none;
+  }
 }

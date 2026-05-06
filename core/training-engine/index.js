@@ -32,6 +32,10 @@ export const TOPIC_TYPES = {
   EXERCICE: "exercice",
   REFLEXION: "reflexion",
   REDACTION: "redaction",
+  DISSERTATION: "dissertation",
+  CAS_PRATIQUE: "cas-pratique",
+  ANALYSE: "analyse",
+  SYNTHESE: "synthese",
 };
 
 const TOPIC_TYPE_LABEL = {
@@ -40,7 +44,31 @@ const TOPIC_TYPE_LABEL = {
   [TOPIC_TYPES.EXERCICE]: "Exercice",
   [TOPIC_TYPES.REFLEXION]: "Réflexion",
   [TOPIC_TYPES.REDACTION]: "Rédaction",
+  [TOPIC_TYPES.DISSERTATION]: "Dissertation",
+  [TOPIC_TYPES.CAS_PRATIQUE]: "Cas pratique",
+  [TOPIC_TYPES.ANALYSE]: "Analyse",
+  [TOPIC_TYPES.SYNTHESE]: "Synthèse",
 };
+
+/**
+ * Compétences pédagogiques évaluées par chaque type de sujet.
+ * Sert à afficher clairement « Compétence évaluée » sur chaque carte.
+ */
+const TOPIC_TYPE_SKILL = {
+  [TOPIC_TYPES.MINI_TEST]: "Mémorisation et restitution",
+  [TOPIC_TYPES.QCM]: "Reconnaissance et discrimination",
+  [TOPIC_TYPES.EXERCICE]: "Application méthodique",
+  [TOPIC_TYPES.REFLEXION]: "Esprit critique et raisonnement",
+  [TOPIC_TYPES.REDACTION]: "Expression écrite structurée",
+  [TOPIC_TYPES.DISSERTATION]: "Argumentation et problématisation",
+  [TOPIC_TYPES.CAS_PRATIQUE]: "Application en situation réelle",
+  [TOPIC_TYPES.ANALYSE]: "Décomposition et interprétation",
+  [TOPIC_TYPES.SYNTHESE]: "Vision d'ensemble et hiérarchisation",
+};
+
+export function topicTypeSkill(t) {
+  return TOPIC_TYPE_SKILL[t] || "Compétence pédagogique générale";
+}
 
 export function topicTypeLabel(t) {
   return TOPIC_TYPE_LABEL[t] || t;
@@ -67,19 +95,19 @@ const LEVEL_TEMPLATES = {
     { type: TOPIC_TYPES.QCM, prompt: (t) => `Identifiez parmi 4 propositions celle qui illustre correctement « ${t} ».`, duration: 5 },
   ],
   3: [
+    { type: TOPIC_TYPES.ANALYSE, prompt: (t) => `Analyse : décomposez « ${t} » en variables, hypothèses et limites, puis interprétez.`, duration: 30 },
     { type: TOPIC_TYPES.REFLEXION, prompt: (t) => `Comparez deux approches différentes de « ${t} » et justifiez vos choix.`, duration: 25 },
-    { type: TOPIC_TYPES.EXERCICE, prompt: (t) => `Analysez un cas portant sur « ${t} » : identifiez les variables, les hypothèses et les limites.`, duration: 30 },
     { type: TOPIC_TYPES.REDACTION, prompt: (t) => `Rédigez une note structurée d'1 page sur « ${t} » avec arguments et contre-arguments.`, duration: 40 },
   ],
   4: [
-    { type: TOPIC_TYPES.REDACTION, prompt: (t) => `Étude de cas approfondie : « ${t} » dans un environnement contraint. Argumentez votre démarche.`, duration: 60 },
+    { type: TOPIC_TYPES.CAS_PRATIQUE, prompt: (t) => `Cas pratique : appliquez « ${t} » à une situation professionnelle réaliste, en justifiant chaque choix.`, duration: 60 },
+    { type: TOPIC_TYPES.DISSERTATION, prompt: (t) => `Dissertation : « En quoi « ${t} » répond-il aux enjeux actuels du domaine ? » Plan en 3 parties.`, duration: 90 },
     { type: TOPIC_TYPES.REFLEXION, prompt: (t) => `Construisez un raisonnement complet en 3 parties autour de « ${t} », avec exemples chiffrés.`, duration: 75 },
-    { type: TOPIC_TYPES.EXERCICE, prompt: (t) => `Résolvez un problème complexe mêlant « ${t} » et un autre concept du chapitre.`, duration: 50 },
   ],
   5: [
-    { type: TOPIC_TYPES.REDACTION, prompt: (t) => `Analysez les limites de « ${t} » dans un contexte réel, à fort enjeu et en environnement instable.`, duration: 90 },
-    { type: TOPIC_TYPES.REFLEXION, prompt: (t) => `Synthèse critique : confrontez « ${t} » à au moins deux disciplines connexes et proposez une stratégie.`, duration: 90 },
-    { type: TOPIC_TYPES.REDACTION, prompt: (t) => `Dissertation : « En quoi « ${t} » reste-t-il pertinent face aux mutations contemporaines ? »`, duration: 120 },
+    { type: TOPIC_TYPES.SYNTHESE, prompt: (t) => `Synthèse critique : confrontez « ${t} » à au moins deux disciplines connexes et proposez une stratégie globale.`, duration: 90 },
+    { type: TOPIC_TYPES.DISSERTATION, prompt: (t) => `Dissertation : « En quoi « ${t} » reste-t-il pertinent face aux mutations contemporaines ? »`, duration: 120 },
+    { type: TOPIC_TYPES.CAS_PRATIQUE, prompt: (t) => `Cas pratique avancé : « ${t} » en environnement instable et à fort enjeu — argumentez votre démarche.`, duration: 90 },
   ],
 };
 
@@ -107,6 +135,7 @@ export function generateTopics(subject, title, opts = {}) {
         id: `topic_${Date.now()}_${counter++}`,
         level: lvl,
         type: tpl.type,
+        skill: TOPIC_TYPE_SKILL[tpl.type] || "Compétence pédagogique générale",
         subject: cleanSubject,
         theme: opts.theme || cleanTitle,
         title: cleanTitle,
@@ -202,12 +231,25 @@ export function gradeAnswer(topic, answer) {
   if (topic.level >= 4 && note < 10) advice.push("Reviens d'abord sur les niveaux 2-3 pour consolider les bases.");
   if (advice.length === 0) advice.push("Continue à varier les exercices : alterne mini-tests et rédactions pour ancrer la notion.");
 
+  // Vue pédagogique synthétique en pourcentages, alignée avec le cahier des charges :
+  // Compréhension, Structure, Argumentation, Clarté.
+  // Ces axes sont dérivés des critères fond/forme — ils restent cohérents avec eux
+  // et constituent une interface stable pour brancher une vraie IA correctrice.
+  const findVal = (list, name) => (list.find((c) => c.name === name) || { value: 3 }).value;
+  const pedagogicalPercents = {
+    "Compréhension": Math.round((findVal(fondCriteria, "Compréhension du sujet") / 5) * 100),
+    "Structure": Math.round((findVal(formeCriteria, "Structure du propos") / 5) * 100),
+    "Argumentation": Math.round((findVal(formeCriteria, "Qualité de l'argumentation") / 5) * 100),
+    "Clarté": Math.round((findVal(formeCriteria, "Clarté de l'expression") / 5) * 100),
+  };
+
   return {
     topicId: topic.id,
     note,
     noteOver: 20,
     fond: { criteria: fondCriteria, average: fondAvg },
     forme: { criteria: formeCriteria, average: formeAvg },
+    pedagogicalPercents,
     strengths,
     weaknesses,
     advice,
@@ -309,12 +351,39 @@ export function computeProgressStats(reports) {
       copyCount: 0,
       averageNote: 0,
       averageDurationMin: 0,
+      successRate: 0,
+      currentStreak: 0,
+      bestStreak: 0,
       strongSubjects: [],
       weakSubjects: [],
     };
   }
   const total = reports.reduce((a, r) => a + (r.note || 0), 0);
   const avg = Math.round((total / reports.length) * 10) / 10;
+  const passingThreshold = 10;
+  const passingCount = reports.filter((r) => (r.note || 0) >= passingThreshold).length;
+  const successRate = Math.round((passingCount / reports.length) * 100);
+
+  // Série actuelle : on parcourt les copies de la plus récente à la plus ancienne.
+  // L'appelant transmet déjà `trainingState.copies.map((c) => c.report)`, et `copies`
+  // est rangé en ordre antéchronologique (unshift à chaque nouveau rendu).
+  let currentStreak = 0;
+  for (let i = 0; i < reports.length; i += 1) {
+    if ((reports[i].note || 0) >= passingThreshold) currentStreak += 1;
+    else break;
+  }
+  // Meilleure série jamais atteinte
+  let bestStreak = 0;
+  let running = 0;
+  reports.forEach((r) => {
+    if ((r.note || 0) >= passingThreshold) {
+      running += 1;
+      if (running > bestStreak) bestStreak = running;
+    } else {
+      running = 0;
+    }
+  });
+
   const bySubject = {};
   reports.forEach((r) => {
     const s = r.subject || "—";
@@ -332,7 +401,39 @@ export function computeProgressStats(reports) {
     copyCount: reports.length,
     averageNote: avg,
     averageDurationMin: 0,
+    successRate,
+    currentStreak,
+    bestStreak,
     strongSubjects: subjects.slice(0, 3),
     weakSubjects: subjects.slice(-3).reverse(),
+  };
+}
+
+/**
+ * Calcule le nombre de jours actifs distincts dans les `windowDays` derniers jours.
+ * Sert au badge « 7 jours actifs ».
+ *
+ * @param {Array<{submittedAt?: string}>} copies
+ * @param {number} windowDays  fenêtre de référence (par défaut 7)
+ * @returns {{ activeDays: number, windowDays: number, isActive7d: boolean }}
+ */
+export function computeActivityStats(copies, windowDays = 7) {
+  if (!copies || !copies.length) {
+    return { activeDays: 0, windowDays, isActive7d: false };
+  }
+  const now = Date.now();
+  const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
+  const days = new Set();
+  copies.forEach((c) => {
+    const t = c.submittedAt ? new Date(c.submittedAt).getTime() : 0;
+    if (!t || t < cutoff) return;
+    const d = new Date(t);
+    days.add(`${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`);
+  });
+  const activeDays = days.size;
+  return {
+    activeDays,
+    windowDays,
+    isActive7d: windowDays === 7 && activeDays >= 7,
   };
 }

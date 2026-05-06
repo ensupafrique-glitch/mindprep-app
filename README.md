@@ -48,4 +48,12 @@ Puis ouvrir `http://localhost:3000/`.
 - Mini-tests adaptatifs.
 - Feedback IA et explications detaillees.
 - Progression, streaks, points et achievements.
-- Paywall freemium, Premium et Pro.
+- Paywall freemium, Étudiant Premium et Professeur Premium.
+
+## Roadmap & APIs recommandées
+
+Voir [`docs/10-roadmap-integrations.md`](docs/10-roadmap-integrations.md) pour
+la liste des APIs (Supabase / Firebase Auth, OpenAI / Claude, Wave / Orange
+Money / Free Money / Stripe / PayPal) et les modules long terme (IA vocale,
+détection des faiblesses cognitives, planification automatique, révision
+adaptative). Aucune clé API n'est branchée — les hooks sont prêts dans le code.

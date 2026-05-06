@@ -9,7 +9,9 @@ import {
   gradeAnswer,
   recommendNextLevel,
   computeProgressStats,
+  computeActivityStats,
   topicTypeLabel,
+  topicTypeSkill,
   levelById,
   DIFFICULTY_LEVELS,
 } from "./core/training-engine/index.js";
@@ -1709,12 +1711,30 @@ document.querySelector("#skipQuestion").addEventListener("click", () => {
   showToast("Question passée. La suivante cible toujours tes priorités.");
 });
 
+// Onglets Zone rédaction / Upload pour le dépôt de copies
+document.querySelectorAll(".copy-mode-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.copyMode;
+    document.querySelectorAll(".copy-mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".copy-mode-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.copyPane === mode);
+    });
+  });
+});
+
+const copyTextEl = document.querySelector("#copyText");
+copyTextEl?.addEventListener("input", (e) => {
+  const w = (e.target.value || "").trim().split(/\s+/).filter(Boolean).length;
+  const c = document.querySelector("#copyTextCount");
+  if (c) c.textContent = `${w} mot${w > 1 ? "s" : ""}`;
+});
+
 copyFile.addEventListener("change", () => {
   const file = copyFile.files?.[0];
   selectedCopyFile = file || null;
 
   if (!file) {
-    copyPreview.innerHTML = "<span>Aucune copie ajoutée</span>";
+    copyPreview.innerHTML = "<span>Aucun fichier ajouté</span>";
     return;
   }
 
@@ -1724,22 +1744,37 @@ copyFile.addEventListener("change", () => {
       copyPreview.innerHTML = `<img src="${reader.result}" alt="Aperçu de la copie ajoutée" />`;
     });
     reader.readAsDataURL(file);
-    showToast("Photo ajoutée. Tu peux lancer la correction.");
+    showToast("Image ajoutée. Tu peux envoyer ta copie.");
     return;
   }
 
   copyPreview.innerHTML = `
     <div class="correction-box">
       <strong>${file.name}</strong>
-      <span>PDF ajouté. La lecture OCR sera traitée par le module IA connecté au backend.</span>
+      <span>${file.type.includes("pdf") ? "PDF" : "Document Word"} ajouté. L'extraction sera traitée par le module IA connecté au backend.</span>
     </div>
   `;
-  showToast("Fichier ajouté. Tu peux lancer la correction.");
+  showToast("Fichier ajouté. Tu peux envoyer ta copie.");
 });
 
+function renderCopyAiAxes(percents) {
+  const setAxis = (fillId, pctId, name) => {
+    const v = Math.round((percents && percents[name]) || 0);
+    const fill = document.querySelector(`#${fillId}`);
+    const lbl = document.querySelector(`#${pctId}`);
+    if (fill) fill.style.width = `${v}%`;
+    if (lbl) lbl.textContent = `${v}%`;
+  };
+  setAxis("copyAxisCompFill", "copyAxisCompPct", "Compréhension");
+  setAxis("copyAxisStructFill", "copyAxisStructPct", "Structure");
+  setAxis("copyAxisArgFill", "copyAxisArgPct", "Argumentation");
+  setAxis("copyAxisClarFill", "copyAxisClarPct", "Clarté");
+}
+
 analyzeCopy.addEventListener("click", async () => {
-  if (!selectedCopyFile) {
-    showToast("Ajoute d'abord une photo ou un PDF de la copie.");
+  const writtenText = (copyTextEl?.value || "").trim();
+  if (!writtenText && !selectedCopyFile) {
+    showToast("Rédige ta copie OU dépose un fichier avant d'envoyer.");
     return;
   }
 
@@ -1755,8 +1790,7 @@ analyzeCopy.addEventListener("click", async () => {
 
   try {
     window.setTimeout(async () => {
-      // Simulation du texte de la copie (en réalité, cela viendrait de l'OCR)
-      const studentWork = copyPrompt.value.trim() || "Copie d'élève à analyser - contenu simulé pour la démonstration";
+      const consigne = copyPrompt.value.trim() || "Copie d'élève à analyser";
 
       // Informations sur l'élève
       const studentInfo = {
@@ -1767,14 +1801,15 @@ analyzeCopy.addEventListener("click", async () => {
 
       // Informations sur l'exercice
       const exerciseInfo = {
-        title: copyPrompt.value.trim() || "Exercice d'application",
+        title: consigne,
         type: "Devoir surveillé",
         date: new Date().toLocaleDateString('fr-FR'),
         estimatedDuration: "45 minutes",
         subject: copySubject.value
       };
 
-      // Analyse et génération du rapport complet
+      // Analyse pédagogique principale
+      const studentWork = writtenText || `[Copie déposée en fichier : ${selectedCopyFile?.name || "document"}]`;
       const result = await pedagogyEngine.analyzeAndReport(studentWork, copySubject.value, exerciseInfo, studentInfo);
 
       // Consommer l'accès (crédits ou usage)
@@ -1783,8 +1818,24 @@ analyzeCopy.addEventListener("click", async () => {
       // Rendu du rapport complet
       renderCompleteReport(result.report);
 
+      // Couche pédagogique additionnelle : axes en pourcentages
+      // (Compréhension / Structure / Argumentation / Clarté), via le training-engine.
+      const axesTopic = {
+        id: `copy_${Date.now()}`,
+        level: 3,
+        type: "redaction",
+        title: consigne,
+        subject: copySubject.value,
+      };
+      const axesReport = gradeAnswer(axesTopic, {
+        text: writtenText,
+        fileName: selectedCopyFile?.name || null,
+        fileType: selectedCopyFile?.type || null,
+      });
+      renderCopyAiAxes(axesReport.pedagogicalPercents);
+
       analyzeCopy.disabled = false;
-      analyzeCopy.textContent = "Lire et corriger la copie";
+      analyzeCopy.textContent = "Envoyer ma copie";
       showToast("Rapport pédagogique complet généré !");
     }, 700);
   } catch (error) {
@@ -1793,8 +1844,10 @@ analyzeCopy.addEventListener("click", async () => {
     window.setTimeout(() => {
       const result = getFallbackCorrection(copySubject.value, copyPrompt.value.trim());
       renderCompleteReport(result.report);
+      // Axes neutres en mode dégradé
+      renderCopyAiAxes({ "Compréhension": 60, "Structure": 60, "Argumentation": 60, "Clarté": 60 });
       analyzeCopy.disabled = false;
-      analyzeCopy.textContent = "Lire et corriger la copie";
+      analyzeCopy.textContent = "Envoyer ma copie";
       showToast("Rapport généré (mode dégradé).");
     }, 700);
   }
@@ -2393,9 +2446,10 @@ function renderTopicsList() {
         </header>
         <h4>${escape(t.title)}</h4>
         <p>${escape(t.prompt)}</p>
+        <p class="topic-skill"><span class="topic-skill-label">Compétence évaluée :</span> ${escape(t.skill || topicTypeSkill(t.type))}</p>
         <footer>
           <span class="topic-subject">${escape(t.subject || "")}</span>
-          <button class="primary-button topic-answer-btn" type="button" data-topic-id="${t.id}">Traiter ce sujet</button>
+          <button class="primary-button topic-answer-btn" type="button" data-topic-id="${t.id}">Traiter le sujet</button>
         </footer>
       </article>
     `).join("") + (lockedCount > 0 ? `
@@ -2522,6 +2576,19 @@ function showCorrectionResult(copy) {
   const r = copy.report;
   document.querySelector("#topicResultTitle").textContent = `${copy.topicTitle} — Niveau ${copy.topicLevel}`;
   document.querySelector("#topicResultGrade").textContent = `${r.note}/${r.noteOver}`;
+  // Axes pédagogiques en pourcentages : Compréhension / Structure / Argumentation / Clarté
+  const pct = r.pedagogicalPercents || {};
+  const setAxis = (fillId, pctId, name) => {
+    const v = Math.round(pct[name] || 0);
+    const fill = document.querySelector(`#${fillId}`);
+    const lbl = document.querySelector(`#${pctId}`);
+    if (fill) fill.style.width = `${v}%`;
+    if (lbl) lbl.textContent = `${v}%`;
+  };
+  setAxis("resAxisCompFill", "resAxisCompPct", "Compréhension");
+  setAxis("resAxisStructFill", "resAxisStructPct", "Structure");
+  setAxis("resAxisArgFill", "resAxisArgPct", "Argumentation");
+  setAxis("resAxisClarFill", "resAxisClarPct", "Clarté");
   const renderCriteria = (list) => list.map((c) => `<li><span>${c.name}</span><strong>${c.value}/5</strong></li>`).join("");
   document.querySelector("#resultFondList").innerHTML = renderCriteria(r.fond.criteria);
   document.querySelector("#resultFormeList").innerHTML = renderCriteria(r.forme.criteria);
@@ -2613,7 +2680,42 @@ function renderProgressStats() {
   const stats = computeProgressStats(trainingState.copies.map((c) => c.report));
   document.querySelector("#statCopyCount").textContent = String(stats.copyCount);
   document.querySelector("#statAvgNote").textContent = stats.copyCount ? `${stats.averageNote}/20` : "--/20";
+  const successEl = document.querySelector("#statSuccessRate");
+  if (successEl) successEl.textContent = stats.copyCount ? `${stats.successRate}%` : "--%";
+  const successBar = document.querySelector("#successBarFill");
+  if (successBar) successBar.style.width = `${stats.copyCount ? stats.successRate : 0}%`;
   document.querySelector("#statLevel").textContent = String(trainingState.currentLevel);
+
+  // Badges : Série de réussite + 7 jours actifs
+  const activity = computeActivityStats(trainingState.copies, 7);
+  const streakBadge = document.querySelector('[data-badge="streak"]');
+  const streakLabel = document.querySelector("#badgeStreakLabel");
+  if (streakBadge && streakLabel) {
+    if (stats.currentStreak >= 2) {
+      streakBadge.classList.remove("is-locked");
+      streakBadge.classList.add("is-unlocked");
+      streakLabel.textContent = `🔥 ${stats.currentStreak} copies réussies de suite (record : ${stats.bestStreak})`;
+    } else {
+      streakBadge.classList.add("is-locked");
+      streakBadge.classList.remove("is-unlocked");
+      streakLabel.textContent = stats.currentStreak === 1
+        ? "1 copie réussie — enchaîne pour débloquer la série"
+        : "Aucune série en cours. Réussis 2 copies de suite (≥10/20).";
+    }
+  }
+  const activeBadge = document.querySelector('[data-badge="active7d"]');
+  const activeLabel = document.querySelector("#badgeActiveLabel");
+  if (activeBadge && activeLabel) {
+    if (activity.isActive7d) {
+      activeBadge.classList.remove("is-locked");
+      activeBadge.classList.add("is-unlocked");
+      activeLabel.textContent = `📅 7 / 7 jours actifs cette semaine — bravo !`;
+    } else {
+      activeBadge.classList.add("is-locked");
+      activeBadge.classList.remove("is-unlocked");
+      activeLabel.textContent = `${activity.activeDays} / 7 jours actifs cette semaine`;
+    }
+  }
 
   const renderSub = (host, list, empty) => {
     const el = document.querySelector(host);

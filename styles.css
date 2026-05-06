@@ -1942,3 +1942,206 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ===== Compétence évaluée sur les cartes sujets ===== */
+.topic-skill {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: rgba(59, 130, 246, 0.08); /* accent bleu IA léger */
+  border-left: 3px solid #3b82f6;
+  border-radius: 6px;
+}
+
+.topic-skill .topic-skill-label {
+  font-weight: 600;
+  color: #1d4ed8;
+  margin-right: 4px;
+}
+
+/* ===== Dépôt de copies — onglets et message UX ===== */
+.copy-ux-note {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: rgba(15, 118, 110, 0.07);
+  border-radius: 8px;
+  border-left: 3px solid var(--brand);
+}
+
+.copy-mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.copy-mode-tab {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.copy-mode-tab:hover {
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.copy-mode-tab.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.copy-mode-pane {
+  display: none;
+}
+
+.copy-mode-pane.active {
+  display: block;
+}
+
+.copy-disclaimer {
+  margin-top: 10px;
+  font-size: 0.8rem;
+}
+
+/* ===== Axes pédagogiques en pourcentages (Correction IA) ===== */
+.ai-axes {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  margin: 14px 0;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(59, 130, 246, 0.05));
+  border-radius: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.ai-axes-title {
+  margin: 0;
+  color: var(--brand-strong);
+}
+
+.ai-axis {
+  display: grid;
+  grid-template-columns: 130px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.ai-axis > span {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ai-axis-bar {
+  height: 10px;
+  background: rgba(15, 118, 110, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ai-axis-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand) 0%, #3b82f6 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.ai-axis strong {
+  text-align: right;
+  font-weight: 700;
+  color: var(--brand-strong);
+}
+
+@media (max-width: 540px) {
+  .ai-axis {
+    grid-template-columns: 100px 1fr 44px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== Progression : taux de réussite + badges ===== */
+.success-bar {
+  height: 10px;
+  background: rgba(22, 163, 74, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.success-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a 0%, var(--brand) 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.badge-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.badge {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  transition: all 0.2s ease;
+}
+
+.badge.is-locked {
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+.badge.is-unlocked {
+  border-color: var(--brand);
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(59, 130, 246, 0.06));
+  box-shadow: 0 6px 18px rgba(15, 118, 110, 0.12);
+}
+
+.badge-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  font-size: 1.6rem;
+  border-radius: 50%;
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.badge.is-unlocked .badge-icon {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.18));
+}
+
+.badge-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.badge-body strong {
+  color: var(--brand-strong);
+  font-size: 0.95rem;
+}
+
+.badge-body span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}

@@ -385,11 +385,15 @@
                   <span>Type</span>
                   <select id="filterType">
                     <option value="">Tous les types</option>
+                    <option value="dissertation">Dissertation</option>
+                    <option value="cas-pratique">Cas pratique</option>
+                    <option value="analyse">Analyse</option>
+                    <option value="synthese">Synthèse</option>
+                    <option value="redaction">Rédaction</option>
+                    <option value="reflexion">Réflexion</option>
+                    <option value="exercice">Exercice</option>
                     <option value="mini-test">Mini-test</option>
                     <option value="qcm">QCM</option>
-                    <option value="exercice">Exercice</option>
-                    <option value="reflexion">Réflexion</option>
-                    <option value="redaction">Rédaction</option>
                   </select>
                 </label>
                 <label class="field">
@@ -467,11 +471,36 @@
                 <div class="progress-stats" id="progressStats">
                   <div><span>Copies rendues</span><strong id="statCopyCount">0</strong></div>
                   <div><span>Note moyenne</span><strong id="statAvgNote">--/20</strong></div>
+                  <div><span>Taux de réussite</span><strong id="statSuccessRate">--%</strong></div>
                   <div><span>Niveau</span><strong id="statLevel">1</strong></div>
+                </div>
+                <div class="success-bar" aria-label="Taux de réussite">
+                  <div class="success-bar-fill" id="successBarFill" style="width:0%"></div>
                 </div>
                 <p class="training-hint" id="progressAdvice">
                   Dépose tes premières copies pour activer la progression intelligente.
                 </p>
+              </article>
+              <article class="training-card">
+                <p class="eyebrow">Badges</p>
+                <h3>Tes succès du moment</h3>
+                <div class="badge-list" id="badgeList" aria-live="polite">
+                  <div class="badge is-locked" data-badge="streak">
+                    <div class="badge-icon" aria-hidden="true">🔥</div>
+                    <div class="badge-body">
+                      <strong>Série de réussite</strong>
+                      <span id="badgeStreakLabel">Aucune série en cours</span>
+                    </div>
+                  </div>
+                  <div class="badge is-locked" data-badge="active7d">
+                    <div class="badge-icon" aria-hidden="true">📅</div>
+                    <div class="badge-body">
+                      <strong>7 jours actifs</strong>
+                      <span id="badgeActiveLabel">0 / 7 jours actifs cette semaine</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="training-hint">L'addiction positive : entraîne-toi un peu chaque jour pour décrocher les badges.</p>
               </article>
               <article class="training-card">
                 <p class="eyebrow">Forces &amp; faiblesses</p>
@@ -534,6 +563,14 @@
               <strong id="topicResultGrade">--/20</strong>
             </div>
 
+            <div class="ai-axes" id="resultAiAxes" aria-label="Analyse détaillée par axe pédagogique">
+              <p class="eyebrow ai-axes-title">Analyse détaillée</p>
+              <div class="ai-axis"><span>Compréhension</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisCompFill" style="width:0%"></div></div><strong id="resAxisCompPct">--%</strong></div>
+              <div class="ai-axis"><span>Structure</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisStructFill" style="width:0%"></div></div><strong id="resAxisStructPct">--%</strong></div>
+              <div class="ai-axis"><span>Argumentation</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisArgFill" style="width:0%"></div></div><strong id="resAxisArgPct">--%</strong></div>
+              <div class="ai-axis"><span>Clarté</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisClarFill" style="width:0%"></div></div><strong id="resAxisClarPct">--%</strong></div>
+            </div>
+
             <div class="result-grid">
               <div>
                 <h4>Fond</h4>
@@ -571,20 +608,39 @@
             <article class="copy-upload-panel">
               <div class="section-heading">
                 <div>
-                  <p class="eyebrow">Correction de copie</p>
-                  <h2>Photographie ton devoir ou ton examen</h2>
+                  <p class="eyebrow">Dépôt de copies</p>
+                  <h2>Envoie ta copie en deux clics</h2>
                 </div>
                 <span class="time-chip">IA correctrice</span>
               </div>
 
-              <label class="copy-dropzone" for="copyFile">
-                <input id="copyFile" type="file" accept="image/*,.pdf" capture="environment" />
-                <span>Ajouter une photo ou un PDF</span>
-                <strong>Copie de devoir, examen blanc, dissertation, exercice ou brouillon</strong>
-              </label>
+              <p class="copy-ux-note">
+                Tu peux <strong>rédiger directement</strong> ta copie dans la zone ci-dessous,
+                <strong>ou déposer un fichier</strong> (PDF, Word, image). MindPrep s'occupe du reste.
+              </p>
 
-              <div class="copy-preview" id="copyPreview">
-                <span>Aucune copie ajoutée</span>
+              <div class="copy-mode-tabs" role="tablist" aria-label="Mode de dépôt">
+                <button class="copy-mode-tab active" type="button" role="tab" data-copy-mode="write">✍️ Zone rédaction</button>
+                <button class="copy-mode-tab" type="button" role="tab" data-copy-mode="upload">📎 Upload</button>
+              </div>
+
+              <div class="copy-mode-pane active" data-copy-pane="write">
+                <label class="field">
+                  <span>Ta copie</span>
+                  <textarea id="copyText" rows="10" placeholder="Rédige ici ta copie : dissertation, étude de cas, analyse, synthèse… Tu peux organiser en paragraphes."></textarea>
+                </label>
+                <p class="training-hint" id="copyTextCount">0 mots</p>
+              </div>
+
+              <div class="copy-mode-pane" data-copy-pane="upload">
+                <label class="copy-dropzone" for="copyFile">
+                  <input id="copyFile" type="file" accept="image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" capture="environment" />
+                  <span>📎 PDF, Word ou image</span>
+                  <strong>Glisse ton fichier ou clique pour ajouter (copie de devoir, examen blanc, dissertation, exercice ou brouillon)</strong>
+                </label>
+                <div class="copy-preview" id="copyPreview">
+                  <span>Aucun fichier ajouté</span>
+                </div>
               </div>
 
               <label class="field">
@@ -604,19 +660,31 @@
 
               <label class="field">
                 <span>Consigne ou sujet</span>
-                <textarea id="copyPrompt" rows="4" placeholder="Ex: Dissertation: La liberté est-elle une illusion ?"></textarea>
+                <textarea id="copyPrompt" rows="3" placeholder="Ex: Dissertation: La liberté est-elle une illusion ?"></textarea>
               </label>
 
-              <button class="primary-button" id="analyzeCopy" type="button">Lire et corriger la copie</button>
+              <button class="primary-button" id="analyzeCopy" type="button">Envoyer ma copie</button>
+              <p class="paywall-disclaimer copy-disclaimer">
+                ⚠️ Démo : la correction utilise un moteur local simulé fond/forme. Hook prêt à brancher une vraie IA correctrice (OpenAI, Claude).
+              </p>
             </article>
 
             <article class="copy-result-panel">
-              <p class="eyebrow">Résultat</p>
+              <p class="eyebrow">Correction IA</p>
               <h2 id="copyResultTitle">En attente de copie</h2>
               <div class="grade-card">
-                <span>Note estimée</span>
+                <span>Note globale</span>
                 <strong id="copyGrade">--/20</strong>
               </div>
+
+              <div class="ai-axes" id="copyAiAxes" aria-label="Analyse détaillée par axe pédagogique">
+                <p class="eyebrow ai-axes-title">Analyse détaillée</p>
+                <div class="ai-axis"><span>Compréhension</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisCompFill" style="width:0%"></div></div><strong id="copyAxisCompPct">--%</strong></div>
+                <div class="ai-axis"><span>Structure</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisStructFill" style="width:0%"></div></div><strong id="copyAxisStructPct">--%</strong></div>
+                <div class="ai-axis"><span>Argumentation</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisArgFill" style="width:0%"></div></div><strong id="copyAxisArgPct">--%</strong></div>
+                <div class="ai-axis"><span>Clarté</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisClarFill" style="width:0%"></div></div><strong id="copyAxisClarPct">--%</strong></div>
+              </div>
+
               <div class="correction-box" id="copyReading">
                 <strong>Lecture</strong>
                 <span>MindPrep affichera ici ce qu’il a compris de la copie.</span>
@@ -823,8 +891,8 @@
 
         <div class="paywall-tabs" role="tablist" aria-label="Plans disponibles">
           <button class="paywall-tab active" type="button" role="tab" data-plan="free">Gratuit</button>
-          <button class="paywall-tab" type="button" role="tab" data-plan="student">Premium Étudiant</button>
-          <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Premium Professeur</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="student">Étudiant Premium</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Professeur Premium</button>
         </div>
 
         <div class="paywall-cards">
@@ -841,29 +909,30 @@
           </article>
 
           <article class="paywall-card" data-plan-card="student">
-            <h3>Premium Étudiant <span class="paywall-badge">Populaire</span></h3>
+            <h3>Étudiant Premium <span class="paywall-badge">Populaire</span></h3>
             <div class="paywall-price"><strong>2 500 FCFA</strong><span>/ mois</span></div>
             <ul>
-              <li>Résumés et sujets illimités</li>
+              <li>Sujets à traiter illimités (5 niveaux)</li>
               <li>Correction IA détaillée fond + forme</li>
+              <li>Analyse avancée (Compréhension / Structure / Argumentation / Clarté)</li>
               <li>Progression IA &amp; adaptation du niveau</li>
-              <li>Téléchargement PDF / Word</li>
               <li>Historique complet des copies</li>
+              <li>Téléchargement PDF / Word</li>
             </ul>
-            <button class="primary-button" type="button" data-select-plan="student">Choisir Premium Étudiant</button>
+            <button class="primary-button" type="button" data-select-plan="student">Choisir Étudiant Premium</button>
           </article>
 
           <article class="paywall-card" data-plan-card="teacher">
-            <h3>Premium Professeur</h3>
+            <h3>Professeur Premium</h3>
             <div class="paywall-price"><strong>7 500 FCFA</strong><span>/ mois</span></div>
             <ul>
               <li>Correction de copies illimitée</li>
               <li>Analyse pédagogique détaillée</li>
               <li>Statistiques élèves</li>
               <li>Génération d'exercices</li>
-              <li>Tous les avantages Étudiant</li>
+              <li>Tous les avantages Étudiant Premium</li>
             </ul>
-            <button class="primary-button" type="button" data-select-plan="teacher">Choisir Premium Professeur</button>
+            <button class="primary-button" type="button" data-select-plan="teacher">Choisir Professeur Premium</button>
           </article>
         </div>
 

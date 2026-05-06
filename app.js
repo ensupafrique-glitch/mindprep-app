@@ -47,6 +47,7 @@ const titles = {
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",
   progress: "Progression",
+  settings: "Paramètres",
 };
 
 let topics = [
@@ -876,6 +877,16 @@ function applyUser(user) {
   examContext.textContent = profile.examContext;
   examCountdown.textContent = profile.countdown;
 
+  // Premium dashboard bindings : welcome + topbar user
+  const welcomeName = document.querySelector("#welcomeName");
+  if (welcomeName) welcomeName.textContent = firstName;
+  const topbarUserName = document.querySelector("#topbarUserName");
+  if (topbarUserName) topbarUserName.textContent = displayName;
+  const topbarAvatar = document.querySelector("#topbarAvatar");
+  if (topbarAvatar) topbarAvatar.textContent = firstName.charAt(0).toUpperCase();
+  const settingsLevel = document.querySelector("#settingsLevel");
+  if (settingsLevel) settingsLevel.textContent = profile.level;
+
   const heroTitle = document.querySelector(".hero-copy h2");
   if (heroTitle) {
     heroTitle.textContent = `${firstName}, révise ce qui compte vraiment aujourd’hui.`;
@@ -1029,16 +1040,35 @@ function getCredentialsFromForm() {
   };
 }
 
-function setView(viewName) {
+function setView(viewName, options = {}) {
   document.querySelectorAll(".view").forEach((view) => {
     view.classList.toggle("active", view.id === viewName);
   });
 
   document.querySelectorAll(".nav-item").forEach((item) => {
-    item.classList.toggle("active", item.dataset.view === viewName);
+    if (options.navKey) {
+      item.classList.toggle("active", item.dataset.view === viewName && item.dataset.navKey === options.navKey);
+    } else {
+      item.classList.toggle("active", item.dataset.view === viewName && !item.dataset.navKey);
+    }
   });
 
-  pageTitle.textContent = titles[viewName] || "MindPrep";
+  if (pageTitle) pageTitle.textContent = titles[viewName] || "MindPrep";
+
+  // Sub-tab targeting (Sujets à traiter / Historique / Mini-tests sous /training)
+  if (viewName === "training" && options.trainingTab) {
+    const tabBtn = document.querySelector(`.training-tab[data-training-tab="${options.trainingTab}"]`);
+    if (tabBtn) tabBtn.click();
+  }
+
+  // Fermer la sidebar mobile si ouverte
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebar) sidebar.classList.remove("is-open");
+
+  // Scroll en haut pour cohérence visuelle
+  if (typeof window !== "undefined") {
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (_) {}
+  }
 }
 
 function getScoreColor(score) {
@@ -1540,7 +1570,16 @@ function updateFeedback(question, isCorrect) {
 
 document.querySelectorAll("[data-view], [data-view-trigger]").forEach((button) => {
   button.addEventListener("click", () => {
-    setView(button.dataset.view || button.dataset.viewTrigger);
+    const view = button.dataset.view || button.dataset.viewTrigger;
+    const navKey = button.dataset.navKey;
+    const opts = {};
+    if (navKey) {
+      opts.navKey = navKey;
+      // Mappage nav-key -> sous-onglet training
+      if (navKey === "topics" && view === "training") opts.trainingTab = "topics";
+      if (navKey === "history" && view === "training") opts.trainingTab = "history";
+    }
+    setView(view, opts);
   });
 });
 
@@ -2750,3 +2789,176 @@ renderTrainingHistory();
 renderProgressStats();
 renderRecommendedLevel();
 
+
+/* =========================================================
+   PREMIUM DASHBOARD UI v2 — wiring
+   ========================================================= */
+
+// Sidebar toggle (mobile)
+const sidebarToggle = document.querySelector("#sidebarToggle");
+const sidebarEl = document.querySelector(".sidebar");
+if (sidebarToggle && sidebarEl) {
+  sidebarToggle.addEventListener("click", () => {
+    sidebarEl.classList.toggle("is-open");
+  });
+  document.addEventListener("click", (e) => {
+    if (!sidebarEl.classList.contains("is-open")) return;
+    if (sidebarEl.contains(e.target) || sidebarToggle.contains(e.target)) return;
+    sidebarEl.classList.remove("is-open");
+  });
+}
+
+// Bouton "Découvrir des sujets" -> ouvre training avec onglet topics
+document.querySelectorAll("[data-discover-topics]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setView("training", { trainingTab: "topics", navKey: "topics" });
+  });
+});
+
+// Bouton Premium dans la sidebar -> ouvre la modale paywall
+const navPremiumBtn = document.querySelector("#navPremium");
+if (navPremiumBtn) {
+  navPremiumBtn.addEventListener("click", () => {
+    const openPaywallBtn = document.querySelector("#openPaywallBtn");
+    const paywallModal = document.querySelector("#paywallModal");
+    if (paywallModal) {
+      paywallModal.classList.remove("is-hidden");
+    } else if (openPaywallBtn) {
+      openPaywallBtn.click();
+    }
+  });
+}
+
+// Recherche globale (filtre simple sur les éléments visibles du dashboard)
+const globalSearch = document.querySelector("#globalSearch");
+if (globalSearch) {
+  globalSearch.addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const cards = document.querySelectorAll(".course-card, .activity-item, .stat-card");
+    if (!q) {
+      cards.forEach((c) => { c.style.display = ""; });
+      return;
+    }
+    cards.forEach((c) => {
+      c.style.display = c.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
+  // ⌘K / Ctrl+K
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      globalSearch.focus();
+    }
+  });
+}
+
+// AI Drawer
+const aiDrawer = document.querySelector("#aiDrawer");
+const aiDrawerBody = document.querySelector("#aiDrawerBody");
+const aiDrawerInput = document.querySelector("#aiDrawerInput");
+const aiDrawerForm = document.querySelector("#aiDrawerForm");
+
+function openAiDrawer() {
+  if (aiDrawer) {
+    aiDrawer.classList.remove("is-hidden");
+    setTimeout(() => aiDrawerInput?.focus(), 200);
+  }
+}
+function closeAiDrawer() {
+  if (aiDrawer) aiDrawer.classList.add("is-hidden");
+}
+
+document.querySelectorAll("#openAiChat").forEach((btn) => {
+  btn.addEventListener("click", openAiDrawer);
+});
+document.querySelectorAll("[data-ai-close]").forEach((el) => {
+  el.addEventListener("click", closeAiDrawer);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && aiDrawer && !aiDrawer.classList.contains("is-hidden")) {
+    closeAiDrawer();
+  }
+});
+
+function pushAiMessage(text, role) {
+  if (!aiDrawerBody) return;
+  const div = document.createElement("div");
+  div.className = `ai-msg ai-msg--${role}`;
+  const p = document.createElement("p");
+  p.textContent = text;
+  div.appendChild(p);
+  aiDrawerBody.appendChild(div);
+  aiDrawerBody.scrollTop = aiDrawerBody.scrollHeight;
+}
+
+function aiCannedReply(question) {
+  const q = (question || "").toLowerCase();
+  if (q.includes("seuil") || q.includes("rentabilit")) {
+    return "Le seuil de rentabilité est le chiffre d'affaires à partir duquel l'entreprise commence à dégager un bénéfice. Formule : SR = Charges fixes / Taux de marge sur coûts variables. Veux-tu un exemple chiffré ?";
+  }
+  if (q.includes("sujet")) {
+    return "Je te recommande un sujet de niveau 2 (intermédiaire) en cohérence avec tes dernières copies. Ouvre 'Sujets à traiter' depuis le menu pour le démarrer.";
+  }
+  if (q.includes("aujourd") || q.includes("travail")) {
+    return "Aujourd'hui, je suggère 30 min : 1) un mini-test de 10 questions, 2) une lecture rapide de ton dernier cours, 3) la rédaction d'un sujet court de niveau 2.";
+  }
+  return "Bonne question. Démo locale : la réponse réelle nécessitera la connexion à l'API IA. En attendant, ouvre la section concernée depuis le menu pour avancer concrètement.";
+}
+
+if (aiDrawerForm) {
+  aiDrawerForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const value = aiDrawerInput.value.trim();
+    if (!value) return;
+    pushAiMessage(value, "user");
+    aiDrawerInput.value = "";
+    setTimeout(() => pushAiMessage(aiCannedReply(value), "bot"), 320);
+  });
+}
+
+document.querySelectorAll("[data-ai-suggest]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const text = btn.dataset.aiSuggest;
+    pushAiMessage(text, "user");
+    setTimeout(() => pushAiMessage(aiCannedReply(text), "bot"), 320);
+  });
+});
+
+// Logout depuis Paramètres
+const settingsLogout = document.querySelector("#settingsLogout");
+if (settingsLogout) {
+  settingsLogout.addEventListener("click", () => {
+    document.querySelector("#logoutBtn")?.click();
+  });
+}
+
+// Met à jour le statut Premium dans la topbar quand updateSubscriptionStatus tourne
+function refreshTopbarPremiumStatus() {
+  const status = document.querySelector("#topbarUserStatus");
+  if (!status) return;
+  // Heuristique : si le badge subscription contient "free", on affiche "Étudiant"
+  const badge = document.querySelector(".subscription-badge .tier-name");
+  if (badge) {
+    const name = badge.textContent.trim();
+    status.textContent = /gratuit|free/i.test(name) ? "Étudiant" : `${name}`;
+  }
+}
+const _origUpdateSub = typeof updateSubscriptionStatus === "function" ? updateSubscriptionStatus : null;
+if (_origUpdateSub) {
+  // Observe le DOM pour refresh
+  const obs = new MutationObserver(refreshTopbarPremiumStatus);
+  document.body && obs.observe(document.body, { childList: true, subtree: true });
+}
+
+// Mise à jour des cartes stats avec données réelles si disponibles
+function refreshDashboardStats() {
+  try {
+    const courseCount = (typeof trainingState !== "undefined" && trainingState?.courses?.length) || 12;
+    const copiesCount = (typeof trainingState !== "undefined" && trainingState?.copies?.length) || 5;
+    const elCourses = document.querySelector("#statCourses");
+    const elCopies = document.querySelector("#statCopies");
+    if (elCourses) elCourses.textContent = courseCount;
+    if (elCopies) elCopies.textContent = copiesCount;
+  } catch (_) {}
+}
+refreshDashboardStats();

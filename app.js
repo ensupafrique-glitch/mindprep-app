@@ -1831,7 +1831,7 @@ document.querySelector("#examMode").addEventListener("click", () => {
 renderTopics();
 renderDiagnostic();
 renderPractice();
-setMode("login");
+setAuthMode("login");
 
 async function initializeAuth() {
   if (!supabaseClient) {

@@ -1,7 +1,17 @@
 // Configuration pour l'intégration IA
+function getEnv(key) {
+  if (typeof process !== 'undefined' && process.env && process.env[key] != null) {
+    return process.env[key];
+  }
+  if (typeof window !== 'undefined' && window.MINDPREP_CONFIG && window.MINDPREP_CONFIG[key] != null) {
+    return window.MINDPREP_CONFIG[key];
+  }
+  return null;
+}
+
 export const aiConfig = {
   openai: {
-    apiKey: process.env.OPENAI_API_KEY || null,
+    apiKey: getEnv('OPENAI_API_KEY'),
     model: "gpt-4o-mini",
     maxTokens: 400,
     temperature: 0.7,

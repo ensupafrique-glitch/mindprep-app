@@ -15,7 +15,24 @@ import {
   levelById,
   DIFFICULTY_LEVELS,
 } from "./core/training-engine/index.js";
-import { createClient as createSupabaseClientSdk } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+
+// Supabase est volontairement importé en lazy/dynamique : un import statique
+// vers https://esm.sh bloque l'exécution du module app.js (et donc tout le
+// rendu) jusqu'à ce que la chaîne d'imports SDK soit téléchargée. Le SDK est
+// désormais chargé à la demande (ouverture popup d'inscription, scheduleBackgroundAuth)
+// pour garantir un premier rendu instantané, même hors ligne ou avec un CDN lent.
+const SUPABASE_SDK_URL = "https://esm.sh/@supabase/supabase-js@2.45.4";
+let supabaseSdkPromise = null;
+function loadSupabaseSdk() {
+  if (!supabaseSdkPromise) {
+    supabaseSdkPromise = import(/* @vite-ignore */ SUPABASE_SDK_URL).catch((error) => {
+      console.warn("Chargement Supabase SDK indisponible — mode invité conservé.", error);
+      supabaseSdkPromise = null;
+      return null;
+    });
+  }
+  return supabaseSdkPromise;
+}
 
 // Initialisation des moteurs de monétisation
 const accessEngine = new AccessEngine();
@@ -823,38 +840,39 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
-function createSupabaseClient() {
+function hasSupabaseConfig() {
   const config = window.MINDPREP_SUPABASE || {};
-  const hasConfig =
+  return Boolean(
     config.url &&
-    config.anonKey &&
-    !config.url.includes("YOUR_PROJECT_REF") &&
-    !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY");
-
-  if (!hasConfig) {
-    return null;
-  }
-
-  try {
-    return createSupabaseClientSdk(config.url, config.anonKey);
-  } catch (error) {
-    console.error("Echec d'initialisation du client Supabase:", error);
-    return null;
-  }
+      config.anonKey &&
+      !config.url.includes("YOUR_PROJECT_REF") &&
+      !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY"),
+  );
 }
 
 /**
- * Initialise le client Supabase à la demande (lazy).
- * Aucune initialisation au chargement de la page : ce client n'est
- * construit que lorsqu'on en a vraiment besoin (popup auth, paywall...),
- * pour garantir un premier rendu de l'app immédiat et sans freeze.
+ * Initialise le client Supabase à la demande (lazy + dynamic import).
+ * Aucune initialisation au chargement de la page : ni le SDK ni le client
+ * ne sont chargés tant qu'un besoin réel n'apparaît pas (popup d'inscription,
+ * tentative de session, paywall…). Toute défaillance reste silencieuse —
+ * l'app continue de fonctionner en mode invité.
+ *
+ * Retourne une promesse résolue avec le client (ou null en cas d'échec ou
+ * si la config Supabase est absente).
  */
-function ensureSupabaseClient() {
+async function ensureSupabaseClient() {
   if (supabaseClient) return supabaseClient;
+  if (!hasSupabaseConfig()) return null;
+
+  const sdk = await loadSupabaseSdk();
+  if (!sdk || typeof sdk.createClient !== "function") return null;
+  if (supabaseClient) return supabaseClient;
+
+  const config = window.MINDPREP_SUPABASE || {};
   try {
-    supabaseClient = createSupabaseClient();
+    supabaseClient = sdk.createClient(config.url, config.anonKey);
   } catch (error) {
-    console.error("Erreur lors de l'init Supabase (lazy):", error);
+    console.error("Echec d'initialisation du client Supabase:", error);
     supabaseClient = null;
   }
   return supabaseClient;
@@ -1025,7 +1043,8 @@ function openSignupModal({ message, mode = "register" } = {}) {
   authScreen.removeAttribute("hidden");
   if (message) showAuthNotice(message);
   // Lazy-initialise Supabase à l'ouverture de la modale (premier vrai besoin).
-  ensureSupabaseClient();
+  // Fire-and-forget : le SDK se charge en arrière-plan, le formulaire reste utilisable.
+  ensureSupabaseClient().catch(() => {});
 }
 
 function closeSignupModal() {
@@ -1842,7 +1861,7 @@ async function handleAuthSubmit() {
     return;
   }
 
-  ensureSupabaseClient();
+  await ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1924,7 +1943,7 @@ authForm.addEventListener("submit", (event) => {
 googleAuth.addEventListener("click", async () => {
   hideAuthNotice();
 
-  ensureSupabaseClient();
+  await ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1958,7 +1977,7 @@ googleAuth.addEventListener("click", async () => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
-    if (!isGuestMode) ensureSupabaseClient();
+    if (!isGuestMode) await ensureSupabaseClient();
     if (supabaseClient && !isGuestMode) {
       await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
     }
@@ -2801,44 +2820,70 @@ function initializeAuth() {
   // après le premier rendu, et toute défaillance est silencieuse.
   enterGuestMode({ persist: true, silent: true });
 
-  // Branchement Supabase non bloquant : on attend que le navigateur soit
-  // au repos (premier paint terminé) avant d'essayer de récupérer une
-  // éventuelle session existante. Si quoi que ce soit échoue, l'app
-  // continue de fonctionner en mode invité.
+  // Branchement Supabase strictement non-bloquant : on attend que la page
+  // soit complètement chargée (window.load) PUIS un délai supplémentaire
+  // avant même de déclencher le chargement dynamique du SDK. Sinon,
+  // l'`import()` dynamique des dizaines de modules esm.sh maintient le
+  // navigateur en état "loading" et empêche DOMContentLoaded de se
+  // déclencher — ce qui faisait freezer la page à l'arrivée.
   const scheduleBackgroundAuth = () => {
-    try {
-      ensureSupabaseClient();
-    } catch (e) {
-      return;
-    }
-    if (!supabaseClient) return;
-
     Promise.resolve()
-      .then(() =>
-        withAuthTimeout(supabaseClient.auth.getSession(), "de session")
-      )
-      .then(({ data }) => {
-        if (data?.session?.user) {
-          applyAuthSession(data.session.user);
-        }
+      .then(() => ensureSupabaseClient())
+      .then((client) => {
+        if (!client) return;
+        return withAuthTimeout(client.auth.getSession(), "de session")
+          .then(({ data }) => {
+            if (data?.session?.user) {
+              applyAuthSession(data.session.user);
+            }
+          })
+          .then(() => {
+            try {
+              client.auth.onAuthStateChange((_event, session) => {
+                applyAuthSession(session?.user || null);
+              });
+            } catch (error) {
+              console.warn("onAuthStateChange indisponible:", error);
+            }
+          });
       })
       .catch((error) => {
         console.warn("Supabase indisponible, mode invité conservé.", error);
       });
+  };
 
-    try {
-      supabaseClient.auth.onAuthStateChange((_event, session) => {
-        applyAuthSession(session?.user || null);
-      });
-    } catch (error) {
-      console.warn("onAuthStateChange indisponible:", error);
+  const armBackgroundAuth = () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(scheduleBackgroundAuth, { timeout: 4000 });
+    } else {
+      window.setTimeout(scheduleBackgroundAuth, 2000);
     }
   };
 
-  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
-    window.requestIdleCallback(scheduleBackgroundAuth, { timeout: 2500 });
+  if (typeof window === "undefined") return;
+  // Garde-fou : tant que document.readyState n'est pas au moins "interactive",
+  // le navigateur considère la page comme "loading". Si on déclenche un
+  // import() dynamique de modules ESM (chaîne Supabase / esm.sh) pendant
+  // cet état, Chromium n'émet jamais DOMContentLoaded et la page reste figée.
+  // On attend donc explicitement DOMContentLoaded (ou load) avant d'amorcer
+  // quoi que ce soit en réseau.
+  const triggerOnce = (() => {
+    let armed = false;
+    return () => {
+      if (armed) return;
+      armed = true;
+      window.setTimeout(armBackgroundAuth, 800);
+    };
+  })();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", triggerOnce, { once: true });
+    // Filet de sécurité si DOMContentLoaded ne se déclenche pas (rare).
+    window.addEventListener("load", triggerOnce, { once: true });
   } else {
-    window.setTimeout(scheduleBackgroundAuth, 1200);
+    // DOM déjà parsé : on peut programmer en toute sécurité.
+    triggerOnce();
   }
 }
 
@@ -3440,14 +3485,23 @@ function refreshTopbarPremiumStatus() {
   const badge = document.querySelector(".subscription-badge .tier-name");
   if (badge) {
     const name = badge.textContent.trim();
-    status.textContent = /gratuit|free/i.test(name) ? "Étudiant" : `${name}`;
+    const next = /gratuit|free/i.test(name) ? "Étudiant" : `${name}`;
+    if (status.textContent !== next) status.textContent = next;
   }
 }
-const _origUpdateSub = typeof updateSubscriptionStatus === "function" ? updateSubscriptionStatus : null;
-if (_origUpdateSub) {
-  // Observe le DOM pour refresh
-  const obs = new MutationObserver(refreshTopbarPremiumStatus);
-  document.body && obs.observe(document.body, { childList: true, subtree: true });
+// Auparavant un MutationObserver écoutait childList+subtree sur document.body
+// pour rafraîchir le badge — mais comme refreshTopbarPremiumStatus modifie
+// lui-même le DOM (#topbarUserStatus), cela créait une boucle infinie de
+// microtâches qui empêchait DOMContentLoaded de se déclencher (page figée).
+// On programme désormais un rafraîchissement périodique très léger, suffisant
+// pour synchroniser le badge avec le statut Supabase quand celui-ci change.
+if (typeof updateSubscriptionStatus === "function" && typeof window !== "undefined") {
+  const startTopbarRefresh = () => window.setInterval(refreshTopbarPremiumStatus, 1500);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startTopbarRefresh, { once: true });
+  } else {
+    startTopbarRefresh();
+  }
 }
 
 // Mise à jour des cartes stats avec données réelles si disponibles

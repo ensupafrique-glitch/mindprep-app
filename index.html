@@ -497,13 +497,10 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <!-- Supabase JS SDK (UMD) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Supabase project config -->
+    <!-- Supabase project config (URL et cle anon) -->
     <script src="supabase-config.js"></script>
 
-    <!-- Application (ES module: imports core/ and data/) -->
+    <!-- Application (ES module: imports core/, data/ et @supabase/supabase-js via esm.sh) -->
     <script type="module" src="app.js"></script>
   </body>
 </html>

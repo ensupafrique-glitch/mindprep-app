@@ -3610,3 +3610,205 @@ if (typeof window !== "undefined") {
   }
   window.setInterval(syncTrainingLevelPill, 2000);
 }
+
+/* ===================================================================
+   Mini cockpit interactif (landing) — personnalisation académique
+   Aucun appel API. Met à jour matière, sujet, mini-test, feedback,
+   progression en fonction des selects niveau / série / concours / objectif.
+   =================================================================== */
+(function initLandingCockpit() {
+  if (typeof document === "undefined") return;
+
+  const SUBJECTS_BY_SERIE = {
+    S: "Mathématiques",
+    L: "Philosophie",
+    ES: "Sciences économiques",
+    STG: "Économie & gestion",
+    Sciences: "Physique-Chimie",
+    Droit: "Droit constitutionnel",
+    Economie: "Macroéconomie",
+  };
+
+  const QUIZZES = {
+    S: {
+      subject: "Mathématiques",
+      question: "« Quelle est la dérivée de f(x) = x² ? »",
+      options: ["A · 2", "B · 2x", "C · x"],
+      correct: 1,
+    },
+    L: {
+      subject: "Philosophie",
+      question: "« La liberté est-elle absence de contrainte ? »",
+      options: ["A · Oui, totalement", "B · Non, elle suppose une règle", "C · Cela dépend du contexte"],
+      correct: 1,
+    },
+    ES: {
+      subject: "Sciences économiques",
+      question: "« Qu'est-ce que l'élasticité-prix de la demande ? »",
+      options: ["A · Variation du PIB", "B · Sensibilité de la demande au prix", "C · Taux d'inflation"],
+      correct: 1,
+    },
+    STG: {
+      subject: "Gestion",
+      question: "« Que mesure la marge commerciale ? »",
+      options: ["A · CA - achats consommés", "B · Le bénéfice net", "C · Les charges fixes"],
+      correct: 0,
+    },
+    Sciences: {
+      subject: "Physique-Chimie",
+      question: "« Quelle est l'unité de la force ? »",
+      options: ["A · Joule", "B · Newton", "C · Pascal"],
+      correct: 1,
+    },
+    Droit: {
+      subject: "Droit",
+      question: "« Quel principe garantit la séparation des pouvoirs ? »",
+      options: ["A · Article 1er DDHC", "B · Théorie de Montesquieu", "C · Code Napoléon"],
+      correct: 1,
+    },
+    Economie: {
+      subject: "Économie",
+      question: "« Que désigne le PIB ? »",
+      options: ["A · Production intérieure brute", "B · Politique d'investissement", "C · Pouvoir d'achat"],
+      correct: 0,
+    },
+  };
+
+  const TOPICS = {
+    S: { level: 4, text: "Étudier la fonction f(x) = x³ - 3x + 2 et tracer sa courbe représentative." },
+    L: { level: 3, text: "Dissertation : « Faut-il craindre la technique ? » — plan en 3 parties." },
+    ES: { level: 4, text: "Analyser les effets d'une hausse des taux directeurs sur la croissance." },
+    STG: { level: 3, text: "Cas pratique : calcul du seuil de rentabilité d'une PME." },
+    Sciences: { level: 4, text: "Démontrer la conservation de l'énergie mécanique dans un pendule simple." },
+    Droit: { level: 3, text: "Commentaire : décision du Conseil constitutionnel n° 71-44 DC." },
+    Economie: { level: 4, text: "Synthèse : politique monétaire vs politique budgétaire en zone euro." },
+  };
+
+  const FEEDBACK_BY_GOAL = {
+    reviser: "« Bonne synthèse : retiens les notions clés et révise par fiches courtes. »",
+    examen: "« Démarche solide, justifie davantage l'étape 2 et conclus avec un schéma. »",
+    entrainer: "« Bon rythme : enchaîne 3 exercices de plus pour ancrer la méthode. »",
+    corriger: "« Copie corrigée : 13/20. Améliore la transition partie 2 → 3. »",
+    ameliorer: "« +1,5 pt potentiel : revois les définitions et soigne la rédaction. »",
+  };
+
+  const LEVEL_LABEL = {
+    college: "Niveau Découverte",
+    seconde: "Niveau Initiation",
+    premiere: "Niveau Intermédiaire",
+    terminale: "Niveau Confirmé",
+    universite: "Niveau Avancé",
+    concours: "Niveau Concours",
+    pro: "Niveau Pro",
+  };
+
+  // Score bands (sur 20) et stats par niveau
+  const STATS_BY_LEVEL = {
+    college:   { score: 12.5, progress: 52, courses: 6,  copies: 3, polyline: "0,60 50,55 100,52 150,46 200,42 250,38 300,34" },
+    seconde:   { score: 13.2, progress: 58, courses: 8,  copies: 5, polyline: "0,58 50,52 100,48 150,42 200,38 250,34 300,30" },
+    premiere:  { score: 13.8, progress: 62, courses: 10, copies: 7, polyline: "0,56 50,50 100,44 150,38 200,32 250,28 300,24" },
+    terminale: { score: 14.5, progress: 68, courses: 12, copies: 9, polyline: "0,55 50,48 100,42 150,30 200,28 250,18 300,12" },
+    universite:{ score: 15.1, progress: 74, courses: 18, copies: 12,polyline: "0,52 50,44 100,36 150,28 200,22 250,16 300,10" },
+    concours:  { score: 15.8, progress: 80, courses: 24, copies: 18,polyline: "0,50 50,42 100,32 150,24 200,18 250,12 300,6" },
+    pro:       { score: 16.4, progress: 85, courses: 30, copies: 22,polyline: "0,48 50,38 100,28 150,20 200,14 250,10 300,4" },
+  };
+
+  const root = document.getElementById("landing-cockpit");
+  if (!root) return;
+
+  const $ = (sel) => root.querySelector(sel);
+  const $$ = (sel) => root.querySelectorAll(sel);
+
+  const elLevel = $("#lcLevel");
+  const elSerie = $("#lcSerie");
+  const elConcours = $("#lcConcours");
+  const elGoal = $("#lcGoal");
+
+  function update() {
+    if (!elLevel || !elSerie || !elGoal) return;
+    const level = elLevel.value;
+    const serie = elSerie.value;
+    const goal = elGoal.value;
+
+    const quiz = QUIZZES[serie] || QUIZZES.S;
+    const topic = TOPICS[serie] || TOPICS.S;
+    const subject = SUBJECTS_BY_SERIE[serie] || "Matière";
+
+    // Mini-test
+    const subjectEl = root.querySelector("[data-lc-subject]");
+    if (subjectEl) subjectEl.textContent = subject;
+    const qEl = root.querySelector("[data-lc-question]");
+    if (qEl) qEl.textContent = quiz.question;
+    const optsHost = root.querySelector("[data-lc-options]");
+    if (optsHost) {
+      optsHost.innerHTML = "";
+      quiz.options.forEach((label, i) => {
+        const span = document.createElement("span");
+        if (i === quiz.correct) {
+          span.className = "ok";
+          span.setAttribute("data-lc-correct", "");
+          span.textContent = label + " ✓";
+        } else {
+          span.textContent = label;
+        }
+        optsHost.appendChild(span);
+      });
+    }
+
+    // Sujet
+    const topicEl = root.querySelector("[data-lc-topic]");
+    if (topicEl) topicEl.textContent = topic.text;
+    const topicLevelEl = root.querySelector("[data-lc-topic-level]");
+    if (topicLevelEl) topicLevelEl.textContent = String(topic.level);
+
+    // Feedback IA
+    const fbEl = root.querySelector("[data-lc-feedback]");
+    if (fbEl) fbEl.textContent = FEEDBACK_BY_GOAL[goal] || FEEDBACK_BY_GOAL.examen;
+
+    // Stats
+    const stats = STATS_BY_LEVEL[level] || STATS_BY_LEVEL.terminale;
+    const setStat = (key, val) => {
+      const el = root.querySelector(`[data-lc-stat="${key}"]`);
+      if (el) el.textContent = val;
+    };
+    setStat("courses", String(stats.courses));
+    setStat("progress", `${stats.progress}%`);
+    setStat("copies", String(stats.copies));
+
+    // Progression
+    const labelEl = root.querySelector("[data-lc-progress-label]");
+    if (labelEl) labelEl.textContent = LEVEL_LABEL[level] || "Niveau";
+    const scoreEl = root.querySelector("[data-lc-progress-score]");
+    if (scoreEl) scoreEl.textContent = `${stats.score.toFixed(1).replace(".", ",")} / 20`;
+    const fillEl = root.querySelector("[data-lc-progress-fill]");
+    if (fillEl) fillEl.style.width = `${stats.progress}%`;
+    const poly = root.querySelector("[data-lc-polyline]");
+    if (poly && stats.polyline && !stats.polyline.includes(":")) poly.setAttribute("points", stats.polyline);
+    // The dot moves to the end of the polyline (last x,y).
+    const dot = root.querySelector("[data-lc-dot]");
+    if (dot && stats.polyline && !stats.polyline.includes(":")) {
+      const last = stats.polyline.trim().split(/\s+/).pop();
+      const [cx, cy] = last.split(",");
+      if (cx && cy) {
+        dot.setAttribute("cx", cx);
+        dot.setAttribute("cy", cy);
+      }
+    }
+
+    // Concours-driven nuance: when concours = MED on serie L, hint Sciences.
+    // (Light touch — the concours select is informational here.)
+    const concoursEl = elConcours;
+    if (concoursEl && concoursEl.value === "MED" && subjectEl) {
+      subjectEl.textContent = "Biologie / Médecine";
+    }
+    if (concoursEl && concoursEl.value === "ENA" && fbEl) {
+      fbEl.textContent = "« Préparation ENA : structure ta dissertation et chronomètre les épreuves. »";
+    }
+  }
+
+  [elLevel, elSerie, elConcours, elGoal].forEach((el) => {
+    if (el) el.addEventListener("change", update);
+  });
+  // Initial render (selects have default values).
+  update();
+})();

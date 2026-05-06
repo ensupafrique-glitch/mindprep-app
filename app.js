@@ -3,6 +3,7 @@ import { renderCourse } from "./core/renderers/course-renderer.js";
 import { courseExamples } from "./data/examples.js";
 import { AccessEngine, CheckoutEngine, PricingEngine, BillingUtils } from "./core/billing/index.js";
 import { ReportEngine, PDFExporter, DOCXExporter, ReportingUtils } from "./core/reporting/index.js";
+import { createClient as createSupabaseClientSdk } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 // Initialisation des moteurs de monétisation
 const accessEngine = new AccessEngine();
@@ -763,18 +764,22 @@ function showToast(message) {
 
 function createSupabaseClient() {
   const config = window.MINDPREP_SUPABASE || {};
-  const sdk = window.supabase;
   const hasConfig =
     config.url &&
     config.anonKey &&
     !config.url.includes("YOUR_PROJECT_REF") &&
     !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY");
 
-  if (!hasConfig || !sdk?.createClient) {
+  if (!hasConfig) {
     return null;
   }
 
-  return sdk.createClient(config.url, config.anonKey);
+  try {
+    return createSupabaseClientSdk(config.url, config.anonKey);
+  } catch (error) {
+    console.error("Echec d'initialisation du client Supabase:", error);
+    return null;
+  }
 }
 
 function showAuthNotice(message) {
@@ -958,12 +963,12 @@ function setAuthMode(mode) {
 function getSupabaseSetupError() {
   const config = window.MINDPREP_SUPABASE || {};
 
-  if (!window.supabase?.createClient) {
-    return "Le SDK Supabase n'a pas ete charge. Verifie ta connexion internet ou remplace le CDN par une installation locale.";
-  }
-
   if (!config.url || !config.anonKey || config.url.includes("YOUR_PROJECT_REF") || config.anonKey.includes("YOUR_SUPABASE_ANON_KEY")) {
     return "Supabase n'est pas encore configure. Renseigne supabase-config.js avec l'URL du projet et la cle anon.";
+  }
+
+  if (!supabaseClient) {
+    return "Initialisation du client Supabase impossible. Verifie l'URL et la cle anon dans supabase-config.js.";
   }
 
   return "";

@@ -49,6 +49,7 @@ Puis ouvrir `http://localhost:3000/`.
 - Feedback IA et explications detaillees.
 - Progression, streaks, points et achievements.
 - Paywall freemium, Étudiant Premium et Professeur Premium.
+- **Exposé intelligent / Présentation IA** : transforme un sujet ou un cours en présentation complète (plan, slides, mind map, graphiques recommandés, questions du jury, coaching oral en Premium). Hooks API prêts pour OpenAI, Claude et Napkin — voir [`docs/11-presentation-integrations.md`](docs/11-presentation-integrations.md).
 - Paiement par crédits (packs FCFA) compatible Wave, Orange Money et Free Money.
 - Offre établissement (écoles, universités, prépas concours) et roadmap marketplace + Coach Réussite IA.
 

@@ -43,6 +43,7 @@ const titles = {
   diagnostic: "Diagnostic",
   practice: "Mini-test",
   copies: "Copies à corriger",
+  presentation: "Exposé intelligent",
   training: "Entraînement intelligent",
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",

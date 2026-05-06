@@ -4855,13 +4855,14 @@ body > .subscription-status {
   border-bottom: 1px solid var(--landing-line);
 }
 .landing-nav-inner {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 14px clamp(20px, 4vw, 40px);
+  padding: 14px clamp(16px, 3vw, 32px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
+  flex-wrap: nowrap;
 }
 .landing-brand {
   display: inline-flex;
@@ -4871,6 +4872,8 @@ body > .subscription-status {
   color: var(--landing-ink);
   font-weight: 800;
   font-size: 1.05rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .landing-brand-mark {
   width: 32px;
@@ -4887,13 +4890,19 @@ body > .subscription-status {
 }
 .landing-nav-links {
   display: flex;
-  gap: 28px;
+  flex-wrap: nowrap;
+  gap: clamp(12px, 1.6vw, 22px);
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .landing-nav-links a {
   color: var(--landing-muted);
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: clamp(0.82rem, 0.92vw, 0.92rem);
   font-weight: 500;
+  white-space: nowrap;
   transition: color 0.18s ease;
 }
 .landing-nav-links a:hover {
@@ -4909,6 +4918,8 @@ body > .subscription-status {
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .landing-nav-cta:hover {
@@ -4917,7 +4928,15 @@ body > .subscription-status {
   box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
+  .landing-nav-links {
+    gap: 14px;
+  }
+  .landing-nav-links a {
+    font-size: 0.84rem;
+  }
+}
+@media (max-width: 880px) {
   .landing-nav-links { display: none; }
 }
 
@@ -6206,6 +6225,75 @@ body > .subscription-status {
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--landing-blue);
+}
+.landing-cockpit-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--landing-emerald-strong, #047857);
+  background: var(--landing-emerald-soft, #d1fae5);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.landing-cockpit-difficulty {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #6366f1, #2563eb);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.landing-cockpit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.landing-cockpit-meta .landing-cockpit-tag {
+  margin-top: 0;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 7px;
+}
+.landing-cockpit-meta .landing-cockpit-tag em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--landing-blue, #2563eb);
+}
+.landing-cockpit-meta .landing-cockpit-tag--matiere {
+  background: rgba(16, 185, 129, 0.10);
+  color: var(--landing-emerald-strong, #047857);
+}
+.landing-cockpit-meta .landing-cockpit-tag--skill {
+  background: rgba(99, 102, 241, 0.10);
+  color: #4338ca;
+}
+.landing-cockpit-meta .landing-cockpit-tag--duration {
+  background: rgba(245, 158, 11, 0.10);
+  color: #b45309;
+}
+.landing-cockpit-nextstep {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  background: rgba(37, 99, 235, 0.06);
+  border-left: 3px solid var(--landing-blue, #2563eb);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  color: var(--landing-muted);
+}
+.landing-cockpit-nextstep .landing-mockup-card-label {
+  display: block;
+  font-size: 0.65rem;
+  margin-bottom: 2px;
 }
 .landing-cockpit-feedback-list {
   list-style: none;

@@ -444,6 +444,7 @@ const pageTitle = document.querySelector("#page-title");
 const toast = document.querySelector("#toast");
 const authScreen = document.querySelector("#authScreen");
 const appShell = document.querySelector("#appShell");
+const landing = document.querySelector("#landing");
 const authForm = document.querySelector("#authForm");
 const loginTab = document.querySelector("#loginTab");
 const registerTab = document.querySelector("#registerTab");
@@ -974,9 +975,13 @@ function applyUser(user) {
 
 function showApp(user) {
   applyUser(user);
-  // L'app shell est toujours visible — la modale d'inscription, si elle
-  // est ouverte, vient se superposer par-dessus sans la masquer.
-  if (appShell) appShell.classList.remove("is-hidden");
+  // L'app shell est révélé seulement après un CTA depuis la landing —
+  // la modale d'inscription se superpose par-dessus sans le masquer.
+  if (landing) landing.classList.add("is-hidden");
+  if (appShell) {
+    appShell.classList.remove("is-hidden");
+    appShell.removeAttribute("hidden");
+  }
 
   // Bannière invité (affichée uniquement si on est en mode invité)
   renderGuestBanner();
@@ -2013,6 +2018,33 @@ if (guestAccess) {
   });
 }
 
+// Landing page premium : CTA « Commencer gratuitement » / « Accéder à MindPrep ».
+// Au clic, on entre en mode invité (sans Supabase) et on révèle l'app shell.
+// « Voir une démonstration » scrolle vers la section démo de la landing.
+document.querySelectorAll("[data-landing-enter]").forEach((el) => {
+  el.addEventListener("click", () => {
+    if (!isGuestMode) {
+      enterGuestMode({ silent: true });
+    } else {
+      // Déjà en mode invité (cas rare via session restaurée) : on révèle juste l'app.
+      if (landing) landing.classList.add("is-hidden");
+      if (appShell) {
+        appShell.classList.remove("is-hidden");
+        appShell.removeAttribute("hidden");
+      }
+    }
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });
+  });
+});
+document.querySelectorAll("[data-landing-scroll]").forEach((el) => {
+  el.addEventListener("click", () => {
+    const target = el.getAttribute("data-landing-scroll");
+    if (!target) return;
+    const node = document.querySelector(target);
+    if (node) node.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
 // Fermeture de la popup d'inscription (croix, backdrop, touche Échap).
 document.querySelector("#authClose")?.addEventListener("click", () => closeSignupModal());
 document.querySelectorAll("[data-signup-close]").forEach((el) => {
@@ -2811,19 +2843,18 @@ function applyAuthSession(user) {
     showApp(mapSupabaseUser(user));
   } else {
     lastAuthUserId = null;
-    // Pas de session : on reste en mode invité — jamais d'écran de login plein page.
-    if (!isGuestMode) {
-      enterGuestMode({ silent: true });
-    }
+    // Pas de session : on ne force rien. Si l'utilisateur a déjà cliqué sur
+    // un CTA et est en mode invité, on conserve cet état. Sinon, la landing
+    // reste visible — jamais d'écran de login plein page.
   }
 }
 
 function initializeAuth() {
-  // OBJECTIF : zéro friction. L'utilisateur entre directement dans l'app
-  // en mode invité au chargement. Aucun appel Supabase n'est effectué
-  // dans ce chemin synchrone — Supabase est branché en arrière-plan,
-  // après le premier rendu, et toute défaillance est silencieuse.
-  enterGuestMode({ persist: true, silent: true });
+  // OBJECTIF : la landing premium est visible par défaut. Aucun appel
+  // Supabase synchrone, aucun mode invité auto. L'utilisateur entre dans
+  // l'app uniquement après avoir cliqué sur un CTA de la landing.
+  // Si une session Supabase persiste (utilisateur déjà connecté), elle
+  // sera détectée en arrière-plan et révélera l'app via applyAuthSession.
 
   // Branchement Supabase strictement non-bloquant : on attend que la page
   // soit complètement chargée (window.load) PUIS un délai supplémentaire

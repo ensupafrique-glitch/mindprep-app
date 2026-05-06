@@ -95,7 +95,306 @@
       </div>
     </section>
 
-    <div class="app-shell" id="appShell">
+    <!--
+      Landing page premium (visible au chargement).
+      L'utilisateur découvre MindPrep avant d'entrer dans l'app.
+      Aucun appel Supabase n'est déclenché ici. Les CTA passent en mode invité
+      via enterGuestMode() côté app.js, sans formulaire d'auth.
+    -->
+    <main class="landing" id="landing" aria-label="Présentation MindPrep">
+      <header class="landing-nav">
+        <div class="landing-nav-inner">
+          <a class="landing-brand" href="#landing">
+            <span class="landing-brand-mark" aria-hidden="true">M</span>
+            <span class="landing-brand-text">MindPrep</span>
+          </a>
+          <nav class="landing-nav-links" aria-label="Sections">
+            <a href="#features">Fonctionnalités</a>
+            <a href="#how">Comment ça marche</a>
+            <a href="#demo">Démonstration</a>
+            <a href="#pricing">Tarifs</a>
+          </nav>
+          <button class="landing-nav-cta" type="button" data-landing-enter>Accéder à MindPrep</button>
+        </div>
+      </header>
+
+      <section class="landing-hero" aria-labelledby="landingHeroTitle">
+        <div class="landing-hero-grid">
+          <div class="landing-hero-copy">
+            <span class="landing-pill">
+              <span class="landing-pill-dot" aria-hidden="true"></span>
+              Préparation intelligente par IA
+            </span>
+            <h1 id="landingHeroTitle">Révise plus intelligemment grâce à l’IA</h1>
+            <p class="landing-hero-lead">
+              Transforme tes cours en résumés intelligents, mini-tests, sujets corrigés et
+              plans de révision.
+            </p>
+            <div class="landing-hero-actions">
+              <button class="landing-cta-primary" type="button" data-landing-enter>
+                Commencer gratuitement
+              </button>
+              <button class="landing-cta-secondary" type="button" data-landing-scroll="#demo">
+                Voir une démonstration
+              </button>
+            </div>
+            <ul class="landing-hero-trust">
+              <li><span aria-hidden="true">⚡</span> Sans inscription</li>
+              <li><span aria-hidden="true">🔒</span> 100% privé</li>
+              <li><span aria-hidden="true">🎓</span> Du collège aux concours</li>
+            </ul>
+          </div>
+
+          <aside class="landing-mockup" aria-hidden="true">
+            <div class="landing-mockup-window">
+              <div class="landing-mockup-bar">
+                <span></span><span></span><span></span>
+                <em>app.mindprep.ai/dashboard</em>
+              </div>
+              <div class="landing-mockup-body">
+                <div class="landing-mockup-side">
+                  <div class="landing-mockup-brand">
+                    <span class="landing-mockup-mark">M</span> MindPrep
+                  </div>
+                  <ul>
+                    <li class="active">📊 Dashboard</li>
+                    <li>📚 Mes cours</li>
+                    <li>🧪 Mini-tests</li>
+                    <li>📝 Sujets</li>
+                    <li>✅ Correction IA</li>
+                  </ul>
+                </div>
+                <div class="landing-mockup-main">
+                  <div class="landing-mockup-row">
+                    <div class="landing-mockup-card landing-mockup-card--score">
+                      <span class="landing-mockup-card-label">Note moyenne</span>
+                      <strong>14,5 / 20</strong>
+                      <span class="landing-mockup-card-trend">▲ +1,8 cette semaine</span>
+                    </div>
+                    <div class="landing-mockup-card landing-mockup-card--streak">
+                      <span class="landing-mockup-card-label">Série</span>
+                      <strong>7 jours</strong>
+                      <span class="landing-mockup-card-trend">🔥 streak actif</span>
+                    </div>
+                  </div>
+                  <div class="landing-mockup-chart" aria-hidden="true">
+                    <span class="landing-mockup-chart-title">Progression</span>
+                    <div class="landing-mockup-bars">
+                      <span style="--h:42%"></span>
+                      <span style="--h:55%"></span>
+                      <span style="--h:48%"></span>
+                      <span style="--h:70%"></span>
+                      <span style="--h:62%"></span>
+                      <span style="--h:80%"></span>
+                      <span style="--h:88%"></span>
+                    </div>
+                  </div>
+                  <div class="landing-mockup-quiz">
+                    <span class="landing-mockup-card-label">Mini-test • Philosophie</span>
+                    <p>« La liberté est-elle absence de contrainte ? »</p>
+                    <div class="landing-mockup-quiz-options">
+                      <span>A · Oui, totalement</span>
+                      <span class="ok">B · Non, elle suppose une règle ✓</span>
+                      <span>C · Cela dépend du contexte</span>
+                    </div>
+                    <span class="landing-mockup-quiz-feedback">
+                      ✨ Feedback IA · explication détaillée
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="landing-mockup-blob landing-mockup-blob--green" aria-hidden="true"></div>
+            <div class="landing-mockup-blob landing-mockup-blob--blue" aria-hidden="true"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="landing-section" id="features" aria-labelledby="featuresTitle">
+        <div class="landing-section-head">
+          <h2 id="featuresTitle">Tout ce dont tu as besoin pour réussir</h2>
+          <p>Une suite complète d’outils IA pensée pour transformer la révision passive en pratique active.</p>
+        </div>
+        <div class="landing-features">
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">🧠</span>
+            <h3>Analyse intelligente des cours</h3>
+            <p>Résumé automatique IA, schémas et fiches courtes générés à partir de ton cours.</p>
+          </article>
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">🧪</span>
+            <h3>Mini-tests automatiques</h3>
+            <p>QCM et entraînements adaptatifs ciblés sur tes vrais points faibles.</p>
+          </article>
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">📝</span>
+            <h3>Sujets à traiter</h3>
+            <p>Exercices classés du niveau 1 au niveau 5, avec corrigés progressifs.</p>
+          </article>
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">✅</span>
+            <h3>Correction de copies IA</h3>
+            <p>Analyse détaillée, feedback pédagogique et plan d’accompagnement personnalisé.</p>
+          </article>
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">📈</span>
+            <h3>Progression intelligente</h3>
+            <p>Suivi des performances par chapitre, heat map des faiblesses et streaks de révision.</p>
+          </article>
+          <article class="landing-feature">
+            <span class="landing-feature-icon" aria-hidden="true">📤</span>
+            <h3>Export PDF / Word</h3>
+            <p>Téléchargement des rapports, fiches et copies corrigées pour réviser hors ligne.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section landing-section--alt" id="how" aria-labelledby="howTitle">
+        <div class="landing-section-head">
+          <h2 id="howTitle">Comment ça marche</h2>
+          <p>Trois étapes pour passer du cours brut à un plan de révision intelligent.</p>
+        </div>
+        <ol class="landing-steps">
+          <li>
+            <span class="landing-step-num">1</span>
+            <h3>Importe ton cours</h3>
+            <p>Colle un texte, dépose un PDF ou une photo — MindPrep extrait l’essentiel.</p>
+          </li>
+          <li>
+            <span class="landing-step-num">2</span>
+            <h3>MindPrep génère l’entraînement</h3>
+            <p>Résumé, fiches, mini-tests adaptatifs et sujets corrigés sont produits automatiquement.</p>
+          </li>
+          <li>
+            <span class="landing-step-num">3</span>
+            <h3>Révise et progresse</h3>
+            <p>Suis ta progression, identifie tes faiblesses et reçois un plan d’action quotidien.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="landing-section" id="demo" aria-labelledby="demoTitle">
+        <div class="landing-section-head">
+          <h2 id="demoTitle">Démonstration</h2>
+          <p>Un aperçu concret de l’expérience MindPrep — dashboard, mini-tests, correction et graphiques.</p>
+        </div>
+        <div class="landing-demo-grid">
+          <article class="landing-demo-card landing-demo-card--dashboard">
+            <header><span aria-hidden="true">📊</span> Dashboard</header>
+            <div class="landing-demo-stats">
+              <div><strong>14,5/20</strong><span>Note moyenne</span></div>
+              <div><strong>7j</strong><span>Streak</span></div>
+              <div><strong>+12%</strong><span>Cette semaine</span></div>
+            </div>
+            <div class="landing-mockup-bars landing-demo-bars" aria-hidden="true">
+              <span style="--h:38%"></span>
+              <span style="--h:55%"></span>
+              <span style="--h:62%"></span>
+              <span style="--h:70%"></span>
+              <span style="--h:82%"></span>
+            </div>
+          </article>
+          <article class="landing-demo-card landing-demo-card--quiz">
+            <header><span aria-hidden="true">🧪</span> Mini-test IA</header>
+            <p class="landing-demo-q">« Quel facteur explique la décolonisation africaine après 1945 ? »</p>
+            <ul class="landing-demo-options">
+              <li>A · Le seul effort militaire local</li>
+              <li class="ok">B · Conjonction de facteurs internes et internationaux ✓</li>
+              <li>C · Une décision unilatérale de l’ONU</li>
+            </ul>
+            <span class="landing-demo-tag">✨ Correction IA en 2s</span>
+          </article>
+          <article class="landing-demo-card landing-demo-card--copy">
+            <header><span aria-hidden="true">✅</span> Correction de copie</header>
+            <div class="landing-demo-copy">
+              <strong>13/20 — Solide</strong>
+              <p>« Plan structuré, problématique pertinente, mais conclusion à approfondir. »</p>
+              <ul>
+                <li>✓ Argumentation cohérente</li>
+                <li>⚠ Conclusion trop courte</li>
+                <li>↗ Travailler la transition partie 2 → 3</li>
+              </ul>
+            </div>
+          </article>
+          <article class="landing-demo-card landing-demo-card--topics">
+            <header><span aria-hidden="true">📝</span> Sujets à traiter</header>
+            <ul class="landing-demo-topics">
+              <li><span class="lvl lvl-1">N1</span> Définir la souveraineté</li>
+              <li><span class="lvl lvl-2">N2</span> Comparer démocratie / république</li>
+              <li><span class="lvl lvl-3">N3</span> Analyser un texte de Rousseau</li>
+              <li><span class="lvl lvl-4">N4</span> Dissertation : la liberté</li>
+              <li><span class="lvl lvl-5">N5</span> Étude de cas concours</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section landing-section--alt" id="pricing" aria-labelledby="pricingTitle">
+        <div class="landing-section-head">
+          <h2 id="pricingTitle">Plans Premium</h2>
+          <p>Démarre gratuitement. Passe au Premium quand tu es prêt — sans engagement.</p>
+        </div>
+        <div class="landing-plans">
+          <article class="landing-plan">
+            <h3>Gratuit</h3>
+            <p class="landing-plan-tag">Découverte</p>
+            <p class="landing-plan-price">0 FCFA</p>
+            <ul>
+              <li>3 cours / mois</li>
+              <li>Mini-tests limités</li>
+              <li>Correction sommaire</li>
+              <li>Mode invité, sans inscription</li>
+            </ul>
+            <button class="landing-cta-secondary" type="button" data-landing-enter>Commencer</button>
+          </article>
+          <article class="landing-plan landing-plan--featured">
+            <span class="landing-plan-badge">Le plus populaire</span>
+            <h3>Premium Étudiant</h3>
+            <p class="landing-plan-tag">Révision avancée</p>
+            <p class="landing-plan-price">3 000 – 7 000 <small>FCFA / mois</small></p>
+            <ul>
+              <li>Cours et mini-tests illimités</li>
+              <li>Correction détaillée IA</li>
+              <li>Plan de révision personnalisé</li>
+              <li>Coach IA et exposés intelligents</li>
+            </ul>
+            <button class="landing-cta-primary" type="button" data-landing-enter>Essayer Premium</button>
+          </article>
+          <article class="landing-plan">
+            <h3>Premium Professeur</h3>
+            <p class="landing-plan-tag">Correction et suivi</p>
+            <p class="landing-plan-price">10 000 – 30 000 <small>FCFA / mois</small></p>
+            <ul>
+              <li>Correction massive de copies</li>
+              <li>Dashboard élèves</li>
+              <li>Statistiques pédagogiques</li>
+              <li>Export PDF / DOCX professionnel</li>
+            </ul>
+            <button class="landing-cta-secondary" type="button" data-landing-enter>Découvrir</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-cta-final" aria-labelledby="ctaFinalTitle">
+        <div class="landing-cta-final-inner">
+          <h2 id="ctaFinalTitle">Commence gratuitement dès maintenant</h2>
+          <p>Aucune carte bancaire, aucune inscription requise. Découvre MindPrep en 10 secondes.</p>
+          <button class="landing-cta-primary landing-cta-primary--xl" type="button" data-landing-enter>
+            Accéder à MindPrep
+          </button>
+        </div>
+      </section>
+
+      <footer class="landing-footer">
+        <div>
+          <span class="landing-brand-mark" aria-hidden="true">M</span>
+          <strong>MindPrep</strong> — Préparation intelligente aux examens par IA.
+        </div>
+        <small>© 2026 MindPrep. Tous droits réservés.</small>
+      </footer>
+    </main>
+
+    <div class="app-shell is-hidden" id="appShell" hidden>
       <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Ouvrir la navigation">
         <span aria-hidden="true">☰</span>
       </button>

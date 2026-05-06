@@ -34,9 +34,27 @@ Pour Google OAuth, lancer plutot un serveur local:
 
 Puis ouvrir `http://localhost:3000/`.
 
+## Parcours invite (« show value first »)
+
+MindPrep suit le modele moderne « decouvre d'abord, cree un compte plus tard »
+(comme ChatGPT, Canva, Notion ou Figma).
+
+Sur l'ecran d'accueil, le bouton **« Essayer MindPrep gratuitement, sans
+compte »** entre directement dans l'application sans appeler Supabase Auth.
+L'utilisateur peut alors explorer le dashboard, le diagnostic, les mini-tests,
+l'Expose intelligent et l'apercu Premium.
+
+Les actions qui necessitent un compte (achat de credits, abonnement Premium,
+synchronisation entre appareils) declenchent un prompt non bloquant invitant
+l'utilisateur a creer un compte. L'inscription/connexion classique reste
+disponible a tout moment via la banniere « Mode invite » ou en se deconnectant.
+
+Le mode invite est persiste en `localStorage` (`mindprep_guest_mode_v1`) afin
+que l'utilisateur ne reparte pas a zero au prochain chargement.
+
 ## Modules principaux
 
-- Authentification email et Google.
+- Authentification email et Google (optionnelle, parcours invite disponible).
 - Choix de classe et parcours: College, Seconde, Premiere, Terminale, serie L, ENA, Classes prepa et Etudiant libre.
 - Matieres litteraires: philosophie, histoire, geographie, litterature, langues et methodologie.
 - Parcours concours: culture generale, droit public, economie, note de synthese, dissertation, colles et oral.

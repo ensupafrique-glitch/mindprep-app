@@ -372,6 +372,117 @@ button {
   background: var(--brand-strong);
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 4px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line, #e2e8f0);
+}
+
+.guest-button {
+  min-height: 48px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1.5px dashed var(--brand, #4f46e5);
+  color: var(--brand-strong, #3730a3);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.06));
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.guest-button:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(168, 85, 247, 0.12));
+  transform: translateY(-1px);
+}
+
+.guest-button:focus-visible {
+  outline: 2px solid var(--brand, #4f46e5);
+  outline-offset: 2px;
+}
+
+.guest-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+  text-align: center;
+}
+
+.guest-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.20);
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.guest-banner-icon {
+  font-size: 18px;
+}
+
+.guest-banner-text {
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.4;
+}
+
+.guest-banner-text strong {
+  color: #3730a3;
+}
+
+.guest-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guest-banner-cta {
+  border: 0;
+  background: var(--brand, #4f46e5);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.guest-banner-cta:hover {
+  background: var(--brand-strong, #3730a3);
+}
+
+.guest-banner-dismiss {
+  border: 1px solid rgba(99, 102, 241, 0.30);
+  background: #fff;
+  color: #475569;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .secondary-button {
   border: 1px solid var(--line);
   color: var(--ink);

@@ -35,6 +35,31 @@ let currentUser = {
   subscription: null
 };
 
+// Mode invité : accès direct sans Supabase Auth (parcours "show value first")
+// Persistance simple via localStorage pour éviter de redemander à chaque chargement.
+const GUEST_STORAGE_KEY = "mindprep_guest_mode_v1";
+let isGuestMode = false;
+
+function readGuestModeFromStorage() {
+  try {
+    return window.localStorage?.getItem(GUEST_STORAGE_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function persistGuestMode(active) {
+  try {
+    if (active) {
+      window.localStorage?.setItem(GUEST_STORAGE_KEY, "1");
+    } else {
+      window.localStorage?.removeItem(GUEST_STORAGE_KEY);
+    }
+  } catch (e) {
+    // best effort
+  }
+}
+
 // Stockage du dernier rapport généré
 let lastGeneratedReport = null;
 
@@ -413,6 +438,7 @@ const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
 const authLevel = document.querySelector("#authLevel");
 const googleAuth = document.querySelector("#googleAuth");
+const guestAccess = document.querySelector("#guestAccess");
 const logoutBtn = document.querySelector("#logoutBtn");
 const userName = document.querySelector("#userName");
 const userLevel = document.querySelector("#userLevel");
@@ -904,8 +930,122 @@ function showApp(user) {
   authScreen.classList.add("is-hidden");
   appShell.classList.remove("is-hidden");
 
+  // Bannière invité (affichée uniquement si on est en mode invité)
+  renderGuestBanner();
+
   // Afficher le statut d'abonnement
   updateSubscriptionStatus();
+}
+
+/**
+ * Active le mode invité : entre dans l'app sans appel Supabase Auth.
+ * Réutilise le pipeline showApp/applyUser pour préserver toutes les
+ * fonctionnalités existantes (dashboard, training, paywall, exposé...).
+ */
+function enterGuestMode({ persist = true, silent = false } = {}) {
+  isGuestMode = true;
+  if (persist) persistGuestMode(true);
+
+  currentUser = {
+    ...currentUser,
+    id: "guest_user",
+    tier: "free",
+    isGuest: true,
+  };
+
+  // Profil minimal pour le rendu UI ; pas d'appel réseau.
+  showApp({
+    name: "Invité",
+    email: "",
+    level: "Terminale generale",
+    provider: "guest",
+  });
+
+  if (!silent) {
+    showToast("Bienvenue ! Tu es en mode invité. Crée un compte plus tard pour sauvegarder.");
+  }
+}
+
+function exitGuestMode() {
+  isGuestMode = false;
+  persistGuestMode(false);
+  currentUser = {
+    ...currentUser,
+    id: "demo_user",
+    isGuest: false,
+  };
+  removeGuestBanner();
+}
+
+/**
+ * Vérifie si une action nécessitant un compte doit être bloquée.
+ * Retourne true si l'utilisateur est en mode invité (action à intercepter),
+ * false sinon (action autorisée).
+ *
+ * @param {string} message - Message contextualisé pour le prompt
+ * @returns {boolean} true si l'action est interceptée
+ */
+function requireAccount(message) {
+  if (!isGuestMode) return false;
+  promptAccountCreation(message);
+  return true;
+}
+
+function promptAccountCreation(message) {
+  const text = message || "Créez un compte pour sauvegarder votre progression.";
+  showToast(text);
+  // Met en évidence la bannière (qui contient le bouton "Créer un compte")
+  const banner = document.querySelector("#guestBanner");
+  if (banner) {
+    banner.style.transition = "transform 0.2s ease";
+    banner.style.transform = "scale(1.02)";
+    setTimeout(() => {
+      banner.style.transform = "";
+    }, 250);
+  }
+}
+
+function renderGuestBanner() {
+  removeGuestBanner();
+  if (!isGuestMode) return;
+
+  const host = appShell;
+  if (!host) return;
+
+  const banner = document.createElement("div");
+  banner.id = "guestBanner";
+  banner.className = "guest-banner";
+  banner.innerHTML = `
+    <span class="guest-banner-icon" aria-hidden="true">✨</span>
+    <span class="guest-banner-text">
+      <strong>Mode invité actif.</strong>
+      Tu peux explorer MindPrep sans compte. Crée un compte pour sauvegarder ta progression.
+    </span>
+    <span class="guest-banner-actions">
+      <button type="button" class="guest-banner-cta" id="guestBannerSignup">Créer un compte</button>
+      <button type="button" class="guest-banner-dismiss" id="guestBannerDismiss" aria-label="Masquer">Plus tard</button>
+    </span>
+  `;
+
+  // Insertion en haut du contenu principal de l'app
+  const main = host.querySelector("main") || host;
+  main.insertBefore(banner, main.firstChild);
+
+  banner.querySelector("#guestBannerSignup")?.addEventListener("click", () => {
+    // Repasse à l'écran d'auth pour l'inscription, sans casser le mode invité
+    setAuthMode("register");
+    showAuth({ keepGuest: true });
+    showAuthNotice("Crée ton compte pour sauvegarder ta progression. Tu peux revenir au mode invité à tout moment.");
+  });
+
+  banner.querySelector("#guestBannerDismiss")?.addEventListener("click", () => {
+    banner.remove();
+  });
+}
+
+function removeGuestBanner() {
+  const existing = document.querySelector("#guestBanner");
+  if (existing) existing.remove();
 }
 
 /**
@@ -979,7 +1119,13 @@ function createSubscriptionStatusContainer() {
   return container;
 }
 
-function showAuth() {
+function showAuth(options = {}) {
+  // Si on est en mode invité, ne pas forcer l'affichage de l'auth
+  // sauf si l'appelant le demande explicitement (ex: clic "Créer un compte"
+  // depuis la bannière, ou logout volontaire).
+  if (isGuestMode && !options.force && !options.keepGuest) {
+    return;
+  }
   appShell.classList.add("is-hidden");
   authScreen.classList.remove("is-hidden");
 }
@@ -1587,9 +1733,70 @@ document.querySelectorAll("[data-view], [data-view-trigger]").forEach((button) =
 loginTab.addEventListener("click", () => setAuthMode("login"));
 registerTab.addEventListener("click", () => setAuthMode("register"));
 
-authForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+let authSubmitInFlight = false;
+
+const AUTH_TIMEOUT_MS = 15000;
+
+function withAuthTimeout(promise, label) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`Le serveur ${label} met trop de temps à répondre. Vérifie ta connexion puis réessaie.`));
+    }, AUTH_TIMEOUT_MS);
+
+    Promise.resolve(promise)
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+function friendlyAuthErrorMessage(rawMessage, mode) {
+  const message = String(rawMessage || "").toLowerCase();
+
+  if (!message) {
+    return mode === "register"
+      ? "Une erreur est survenue lors de la création du compte. Réessaie."
+      : "Une erreur est survenue lors de la connexion. Réessaie.";
+  }
+
+  if (message.includes("already") || message.includes("registered") || message.includes("exists") || message.includes("duplicate")) {
+    return "Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.";
+  }
+  if (message.includes("invalid login") || message.includes("invalid credentials") || message.includes("invalid email or password")) {
+    return "Email ou mot de passe incorrect.";
+  }
+  if (message.includes("invalid email") || message.includes("email address")) {
+    return "Email invalide. Vérifie son format.";
+  }
+  if (message.includes("password") && (message.includes("short") || message.includes("weak") || message.includes("6") || message.includes("characters"))) {
+    return "Mot de passe trop faible (6 caractères minimum).";
+  }
+  if (message.includes("rate") || message.includes("too many")) {
+    return "Trop de tentatives. Patiente quelques instants avant de réessayer.";
+  }
+  if (message.includes("network") || message.includes("fetch") || message.includes("timeout") || message.includes("trop de temps")) {
+    return mode === "register"
+      ? "Connexion au serveur impossible. Vérifie ton réseau et réessaie."
+      : "Connexion au serveur impossible. Vérifie ton réseau et réessaie.";
+  }
+  if (message.includes("not confirmed") || message.includes("email not confirmed")) {
+    return "Ton email n'est pas encore confirmé. Vérifie ta boîte de réception.";
+  }
+
+  return `Une erreur est survenue. ${rawMessage}`;
+}
+
+async function handleAuthSubmit() {
   hideAuthNotice();
+
+  if (authSubmitInFlight) {
+    return;
+  }
 
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
@@ -1599,41 +1806,74 @@ authForm.addEventListener("submit", async (event) => {
   const credentials = getCredentialsFromForm();
   if (!credentials) return;
 
+  authSubmitInFlight = true;
   authSubmit.disabled = true;
-  authSubmit.textContent = authMode === "register" ? "Creation..." : "Connexion...";
-
-  const response =
+  authSubmit.textContent =
     authMode === "register"
-      ? await supabaseClient.auth.signUp({
-          email: credentials.email,
-          password: credentials.password,
-          options: {
-            data: {
-              name: credentials.name,
-              level: credentials.level,
+      ? "Création de votre espace intelligent…"
+      : "Connexion en cours…";
+
+  const currentMode = authMode;
+
+  try {
+    const action =
+      currentMode === "register"
+        ? supabaseClient.auth.signUp({
+            email: credentials.email,
+            password: credentials.password,
+            options: {
+              data: {
+                name: credentials.name,
+                level: credentials.level,
+              },
             },
-          },
-        })
-      : await supabaseClient.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        });
+          })
+        : supabaseClient.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-  authSubmit.disabled = false;
-  setAuthMode(authMode);
+    const response = await withAuthTimeout(
+      action,
+      currentMode === "register" ? "d'inscription" : "de connexion"
+    );
 
-  if (response.error) {
-    showAuthNotice(`Erreur Supabase: ${response.error.message}`);
-    return;
+    if (response?.error) {
+      showAuthNotice(friendlyAuthErrorMessage(response.error.message, currentMode));
+      return;
+    }
+
+    if (response?.data?.session?.user) {
+      // applyAuthSession dédoublonne l'appel à showApp si onAuthStateChange
+      // déclenche le même utilisateur en parallèle.
+      applyAuthSession(response.data.session.user);
+      showToast(
+        currentMode === "register"
+          ? "Compte créé. Ton diagnostic est prêt."
+          : "Connexion réussie."
+      );
+      return;
+    }
+
+    // Pas de session : confirmation email probablement activée
+    showAuthNotice(
+      currentMode === "register"
+        ? "Compte créé. Vérifie tes emails pour confirmer ton inscription, puis connecte-toi."
+        : "Session non créée. Réessaie ou contacte le support."
+    );
+  } catch (error) {
+    console.error("Erreur auth Supabase:", error);
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, currentMode));
+  } finally {
+    authSubmitInFlight = false;
+    authSubmit.disabled = false;
+    setAuthMode(authMode);
   }
+}
 
-  if (response.data.session?.user) {
-    showApp(mapSupabaseUser(response.data.session.user));
-    showToast(authMode === "register" ? "Compte cree. Ton diagnostic est pret." : "Connexion reussie.");
-    return;
-  }
-
-  showAuthNotice("Compte cree. Verifie tes emails si la confirmation est activee dans Supabase.");
+authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  handleAuthSubmit();
 });
 
 googleAuth.addEventListener("click", async () => {
@@ -1650,28 +1890,49 @@ googleAuth.addEventListener("click", async () => {
     return;
   }
 
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo,
-    },
-  });
-
-  if (error) {
-    showAuthNotice(`Erreur Supabase: ${error.message}`);
+  googleAuth.disabled = true;
+  try {
+    const { error } = await withAuthTimeout(
+      supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      }),
+      "Google"
+    );
+    if (error) {
+      showAuthNotice(friendlyAuthErrorMessage(error.message, authMode));
+    }
+  } catch (error) {
+    console.error("Erreur Google OAuth:", error);
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, authMode));
+  } finally {
+    googleAuth.disabled = false;
   }
 });
 
 logoutBtn.addEventListener("click", async () => {
-  if (supabaseClient) {
-    await supabaseClient.auth.signOut();
+  try {
+    if (supabaseClient && !isGuestMode) {
+      await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
+    }
+  } catch (error) {
+    console.error("Erreur logout Supabase:", error);
+  } finally {
+    const wasGuest = isGuestMode;
+    if (wasGuest) exitGuestMode();
+    authPassword.value = "";
+    setAuthMode("login");
+    showAuth({ force: true });
+    showToast(wasGuest ? "Mode invité quitté." : "Session fermée.");
   }
-
-  authPassword.value = "";
-  setAuthMode("login");
-  showAuth();
-  showToast("Session fermee.");
 });
+
+if (guestAccess) {
+  guestAccess.addEventListener("click", () => {
+    hideAuthNotice();
+    enterGuestMode();
+  });
+}
 
 document.querySelector("#diagAnswers").addEventListener("click", (event) => {
   const button = event.target.closest("[data-diag-answer]");
@@ -2316,6 +2577,9 @@ paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
 });
 
 function initiateCreditsPurchase(pack, method) {
+  if (requireAccount("Crée un compte pour acheter des crédits et les retrouver à chaque connexion.")) {
+    return;
+  }
   const providerLabels = {
     wave: "Wave",
     "orange-money": "Orange Money",
@@ -2357,6 +2621,9 @@ function initiateCreditsPurchase(pack, method) {
  * Les fonctions par méthode sont des points d'intégration prêts à brancher.
  */
 function initiatePayment(plan, method) {
+  if (requireAccount("Crée un compte pour activer ton abonnement Premium et le synchroniser sur tous tes appareils.")) {
+    return;
+  }
   const handlers = {
     wave: (p) => paymentPlaceholder("Wave", p),
     "orange-money": (p) => paymentPlaceholder("Orange Money", p),
@@ -2432,34 +2699,86 @@ renderDiagnostic();
 renderPractice();
 setAuthMode("login");
 
+let lastAuthUserId = null;
+
+function applyAuthSession(user) {
+  if (user) {
+    if (lastAuthUserId === user.id) {
+      // Évite le double-render quand signUp/signIn et onAuthStateChange
+      // se déclenchent quasi simultanément pour le même utilisateur.
+      return;
+    }
+    lastAuthUserId = user.id;
+    // Une vraie session prend le pas sur le mode invité.
+    if (isGuestMode) exitGuestMode();
+    showApp(mapSupabaseUser(user));
+  } else {
+    lastAuthUserId = null;
+    // En mode invité, ne pas forcer le retour à l'écran d'auth :
+    // l'utilisateur a explicitement choisi de continuer sans compte.
+    if (isGuestMode) return;
+    showAuth();
+  }
+}
+
 async function initializeAuth() {
+  // Si l'utilisateur a déjà choisi le mode invité dans une session précédente,
+  // on entre directement dans l'app sans appel Supabase bloquant.
+  if (readGuestModeFromStorage()) {
+    enterGuestMode({ persist: false, silent: true });
+    // On tente quand même getSession en arrière-plan : si l'utilisateur
+    // s'est entre-temps connecté ailleurs, on bascule sur sa session réelle.
+    if (supabaseClient) {
+      try {
+        const { data } = await withAuthTimeout(
+          supabaseClient.auth.getSession(),
+          "de session"
+        );
+        if (data?.session?.user) {
+          applyAuthSession(data.session.user);
+        }
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+          applyAuthSession(session?.user || null);
+        });
+      } catch (error) {
+        // Silencieux : on est déjà en mode invité, l'app est utilisable.
+        console.warn("Supabase indisponible, mode invité conservé.", error);
+      }
+    }
+    return;
+  }
+
   if (!supabaseClient) {
     showAuth();
     showAuthNotice(getSupabaseSetupError());
     return;
   }
 
-  const { data, error } = await supabaseClient.auth.getSession();
+  try {
+    const { data, error } = await withAuthTimeout(
+      supabaseClient.auth.getSession(),
+      "de session"
+    );
 
-  if (error) {
-    showAuth();
-    showAuthNotice(`Erreur Supabase: ${error.message}`);
-    return;
-  }
-
-  if (data.session?.user) {
-    showApp(mapSupabaseUser(data.session.user));
-  } else {
-    showAuth();
-  }
-
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      showApp(mapSupabaseUser(session.user));
-    } else {
+    if (error) {
       showAuth();
+      showAuthNotice(friendlyAuthErrorMessage(error.message, "login"));
+    } else {
+      applyAuthSession(data?.session?.user || null);
     }
-  });
+  } catch (error) {
+    console.error("Erreur getSession Supabase:", error);
+    showAuth();
+    showAuthNotice(friendlyAuthErrorMessage(error?.message, "login"));
+  }
+
+  try {
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      applyAuthSession(session?.user || null);
+    });
+  } catch (error) {
+    console.error("Erreur onAuthStateChange Supabase:", error);
+  }
 }
 
 initializeAuth();

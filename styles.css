@@ -6207,6 +6207,75 @@ body > .subscription-status {
   font-weight: 600;
   color: var(--landing-blue);
 }
+.landing-cockpit-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--landing-emerald-strong, #047857);
+  background: var(--landing-emerald-soft, #d1fae5);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.landing-cockpit-difficulty {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #6366f1, #2563eb);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.landing-cockpit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.landing-cockpit-meta .landing-cockpit-tag {
+  margin-top: 0;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 7px;
+}
+.landing-cockpit-meta .landing-cockpit-tag em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--landing-blue, #2563eb);
+}
+.landing-cockpit-meta .landing-cockpit-tag--matiere {
+  background: rgba(16, 185, 129, 0.10);
+  color: var(--landing-emerald-strong, #047857);
+}
+.landing-cockpit-meta .landing-cockpit-tag--skill {
+  background: rgba(99, 102, 241, 0.10);
+  color: #4338ca;
+}
+.landing-cockpit-meta .landing-cockpit-tag--duration {
+  background: rgba(245, 158, 11, 0.10);
+  color: #b45309;
+}
+.landing-cockpit-nextstep {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  background: rgba(37, 99, 235, 0.06);
+  border-left: 3px solid var(--landing-blue, #2563eb);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  color: var(--landing-muted);
+}
+.landing-cockpit-nextstep .landing-mockup-card-label {
+  display: block;
+  font-size: 0.65rem;
+  margin-bottom: 2px;
+}
 .landing-cockpit-feedback-list {
   list-style: none;
   padding: 0;

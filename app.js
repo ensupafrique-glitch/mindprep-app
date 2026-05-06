@@ -3,6 +3,18 @@ import { renderCourse } from "./core/renderers/course-renderer.js";
 import { courseExamples } from "./data/examples.js";
 import { AccessEngine, CheckoutEngine, PricingEngine, BillingUtils } from "./core/billing/index.js";
 import { ReportEngine, PDFExporter, DOCXExporter, ReportingUtils } from "./core/reporting/index.js";
+import {
+  generateTopics,
+  searchTopics,
+  gradeAnswer,
+  recommendNextLevel,
+  computeProgressStats,
+  computeActivityStats,
+  topicTypeLabel,
+  topicTypeSkill,
+  levelById,
+  DIFFICULTY_LEVELS,
+} from "./core/training-engine/index.js";
 import { createClient as createSupabaseClientSdk } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 // Initialisation des moteurs de monétisation
@@ -30,7 +42,8 @@ const titles = {
   dashboard: "Plan du jour",
   diagnostic: "Diagnostic",
   practice: "Mini-test",
-  copies: "Correction de copie",
+  copies: "Copies à corriger",
+  training: "Entraînement intelligent",
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",
   progress: "Progression",
@@ -423,6 +436,17 @@ const loadCourseExample = document.querySelector("#loadCourseExample");
 const courseOutputTitle = document.querySelector("#courseOutputTitle");
 const criticalAlerts = document.querySelector("#criticalAlerts");
 const courseOutput = document.querySelector("#courseOutput");
+
+// Export buttons
+const courseExportActions = document.querySelector("#courseExportActions");
+const downloadCoursePdfBtn = document.querySelector("#downloadCoursePdf");
+const downloadCourseDocBtn = document.querySelector("#downloadCourseDoc");
+const copyCourseSummaryBtn = document.querySelector("#copyCourseSummary");
+const exportHint = document.querySelector("#exportHint");
+
+// Dernier modèle de cours généré (pour exports)
+let lastCourseModel = null;
+let lastCourseSubject = null;
 
 let authMode = "login";
 const supabaseClient = createSupabaseClient();
@@ -1687,12 +1711,30 @@ document.querySelector("#skipQuestion").addEventListener("click", () => {
   showToast("Question passée. La suivante cible toujours tes priorités.");
 });
 
+// Onglets Zone rédaction / Upload pour le dépôt de copies
+document.querySelectorAll(".copy-mode-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.copyMode;
+    document.querySelectorAll(".copy-mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".copy-mode-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.copyPane === mode);
+    });
+  });
+});
+
+const copyTextEl = document.querySelector("#copyText");
+copyTextEl?.addEventListener("input", (e) => {
+  const w = (e.target.value || "").trim().split(/\s+/).filter(Boolean).length;
+  const c = document.querySelector("#copyTextCount");
+  if (c) c.textContent = `${w} mot${w > 1 ? "s" : ""}`;
+});
+
 copyFile.addEventListener("change", () => {
   const file = copyFile.files?.[0];
   selectedCopyFile = file || null;
 
   if (!file) {
-    copyPreview.innerHTML = "<span>Aucune copie ajoutée</span>";
+    copyPreview.innerHTML = "<span>Aucun fichier ajouté</span>";
     return;
   }
 
@@ -1702,22 +1744,37 @@ copyFile.addEventListener("change", () => {
       copyPreview.innerHTML = `<img src="${reader.result}" alt="Aperçu de la copie ajoutée" />`;
     });
     reader.readAsDataURL(file);
-    showToast("Photo ajoutée. Tu peux lancer la correction.");
+    showToast("Image ajoutée. Tu peux envoyer ta copie.");
     return;
   }
 
   copyPreview.innerHTML = `
     <div class="correction-box">
       <strong>${file.name}</strong>
-      <span>PDF ajouté. La lecture OCR sera traitée par le module IA connecté au backend.</span>
+      <span>${file.type.includes("pdf") ? "PDF" : "Document Word"} ajouté. L'extraction sera traitée par le module IA connecté au backend.</span>
     </div>
   `;
-  showToast("Fichier ajouté. Tu peux lancer la correction.");
+  showToast("Fichier ajouté. Tu peux envoyer ta copie.");
 });
 
+function renderCopyAiAxes(percents) {
+  const setAxis = (fillId, pctId, name) => {
+    const v = Math.round((percents && percents[name]) || 0);
+    const fill = document.querySelector(`#${fillId}`);
+    const lbl = document.querySelector(`#${pctId}`);
+    if (fill) fill.style.width = `${v}%`;
+    if (lbl) lbl.textContent = `${v}%`;
+  };
+  setAxis("copyAxisCompFill", "copyAxisCompPct", "Compréhension");
+  setAxis("copyAxisStructFill", "copyAxisStructPct", "Structure");
+  setAxis("copyAxisArgFill", "copyAxisArgPct", "Argumentation");
+  setAxis("copyAxisClarFill", "copyAxisClarPct", "Clarté");
+}
+
 analyzeCopy.addEventListener("click", async () => {
-  if (!selectedCopyFile) {
-    showToast("Ajoute d'abord une photo ou un PDF de la copie.");
+  const writtenText = (copyTextEl?.value || "").trim();
+  if (!writtenText && !selectedCopyFile) {
+    showToast("Rédige ta copie OU dépose un fichier avant d'envoyer.");
     return;
   }
 
@@ -1733,8 +1790,7 @@ analyzeCopy.addEventListener("click", async () => {
 
   try {
     window.setTimeout(async () => {
-      // Simulation du texte de la copie (en réalité, cela viendrait de l'OCR)
-      const studentWork = copyPrompt.value.trim() || "Copie d'élève à analyser - contenu simulé pour la démonstration";
+      const consigne = copyPrompt.value.trim() || "Copie d'élève à analyser";
 
       // Informations sur l'élève
       const studentInfo = {
@@ -1745,14 +1801,15 @@ analyzeCopy.addEventListener("click", async () => {
 
       // Informations sur l'exercice
       const exerciseInfo = {
-        title: copyPrompt.value.trim() || "Exercice d'application",
+        title: consigne,
         type: "Devoir surveillé",
         date: new Date().toLocaleDateString('fr-FR'),
         estimatedDuration: "45 minutes",
         subject: copySubject.value
       };
 
-      // Analyse et génération du rapport complet
+      // Analyse pédagogique principale
+      const studentWork = writtenText || `[Copie déposée en fichier : ${selectedCopyFile?.name || "document"}]`;
       const result = await pedagogyEngine.analyzeAndReport(studentWork, copySubject.value, exerciseInfo, studentInfo);
 
       // Consommer l'accès (crédits ou usage)
@@ -1761,8 +1818,24 @@ analyzeCopy.addEventListener("click", async () => {
       // Rendu du rapport complet
       renderCompleteReport(result.report);
 
+      // Couche pédagogique additionnelle : axes en pourcentages
+      // (Compréhension / Structure / Argumentation / Clarté), via le training-engine.
+      const axesTopic = {
+        id: `copy_${Date.now()}`,
+        level: 3,
+        type: "redaction",
+        title: consigne,
+        subject: copySubject.value,
+      };
+      const axesReport = gradeAnswer(axesTopic, {
+        text: writtenText,
+        fileName: selectedCopyFile?.name || null,
+        fileType: selectedCopyFile?.type || null,
+      });
+      renderCopyAiAxes(axesReport.pedagogicalPercents);
+
       analyzeCopy.disabled = false;
-      analyzeCopy.textContent = "Lire et corriger la copie";
+      analyzeCopy.textContent = "Envoyer ma copie";
       showToast("Rapport pédagogique complet généré !");
     }, 700);
   } catch (error) {
@@ -1771,8 +1844,10 @@ analyzeCopy.addEventListener("click", async () => {
     window.setTimeout(() => {
       const result = getFallbackCorrection(copySubject.value, copyPrompt.value.trim());
       renderCompleteReport(result.report);
+      // Axes neutres en mode dégradé
+      renderCopyAiAxes({ "Compréhension": 60, "Structure": 60, "Argumentation": 60, "Clarté": 60 });
       analyzeCopy.disabled = false;
-      analyzeCopy.textContent = "Lire et corriger la copie";
+      analyzeCopy.textContent = "Envoyer ma copie";
       showToast("Rapport généré (mode dégradé).");
     }, 700);
   }
@@ -1806,27 +1881,387 @@ generateCourse.addEventListener("click", () => {
       criticalAlerts,
       courseOutput,
     });
+    lastCourseModel = model;
+    lastCourseSubject = subject;
+    enableCourseExports(true);
     generateCourse.disabled = false;
     generateCourse.textContent = "Créer le cours intelligent";
     showToast("Cours intelligent créé avec alertes et plan d'apprentissage.");
   }, 500);
 });
 
+/**
+ * Active ou désactive les boutons d'export selon qu'un cours est disponible.
+ */
+function enableCourseExports(enabled) {
+  if (!courseExportActions) return;
+  courseExportActions.dataset.disabled = enabled ? "false" : "true";
+  [downloadCoursePdfBtn, downloadCourseDocBtn, copyCourseSummaryBtn].forEach((btn) => {
+    if (btn) btn.disabled = !enabled;
+  });
+  if (exportHint) {
+    exportHint.textContent = enabled
+      ? "Cours prêt — choisis ton format d'export."
+      : "Génère d'abord un cours pour activer les exports.";
+  }
+}
+
+/**
+ * Convertit le modèle de cours généré en texte structuré (pour résumé/copie/Word).
+ */
+function buildCourseSummaryText(model, subject) {
+  if (!model) return "";
+  const lines = [];
+  const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const titleStr = courseTitle.value.trim() || model.mainIdea || "Cours intelligent";
+  lines.push(`MindPrep — Cours intelligent`);
+  lines.push(`Date : ${dateStr}`);
+  lines.push(`Matière : ${subject || lastCourseSubject || ""}`);
+  lines.push(`Titre : ${titleStr}`);
+  lines.push("");
+  lines.push(`1. Idée centrale`);
+  lines.push(model.mainIdea || "—");
+  lines.push("");
+  if (model.keywords?.length) {
+    lines.push(`2. Concepts clés`);
+    model.keywords.forEach((k) => lines.push(`  • ${k}`));
+    lines.push("");
+  }
+  if (model.schema) {
+    lines.push(`3. Modélisation / Schéma`);
+    lines.push(model.schema);
+    lines.push("");
+  }
+  if (model.relations?.length) {
+    lines.push(`4. Relations entre notions`);
+    model.relations.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.compression?.length) {
+    lines.push(`5. Compression intelligente`);
+    model.compression.forEach((c) => lines.push(`  • ${c}`));
+    lines.push("");
+  }
+  if (model.rules?.length) {
+    lines.push(`6. Règles pédagogiques`);
+    model.rules.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.reconstruction?.length) {
+    lines.push(`7. Plan de reconstruction / révision`);
+    model.reconstruction.forEach((r) => lines.push(`  • ${r}`));
+    lines.push("");
+  }
+  if (model.applications?.length) {
+    lines.push(`8. Applications pratiques`);
+    model.applications.forEach((a) => lines.push(`  • ${a}`));
+    lines.push("");
+  }
+  if (model.alerts?.length) {
+    lines.push(`Alertes critiques`);
+    model.alerts.forEach((a) => lines.push(`  ⚠ ${a}`));
+    lines.push("");
+  }
+  lines.push("—");
+  lines.push("Généré par MindPrep — Préparation intelligente aux examens par IA");
+  return lines.join("\n");
+}
+
+/**
+ * Construit un document HTML autonome pour impression PDF (via window.print).
+ */
+function buildCoursePrintableHtml(model, subject) {
+  const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const titleStr = courseTitle.value.trim() || model.mainIdea || "Cours intelligent";
+  const escape = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const list = (arr) => `<ul>${(arr || []).map((x) => `<li>${escape(x)}</li>`).join("")}</ul>`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"/>
+    <title>MindPrep — ${escape(titleStr)}</title>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; color: #14213d; max-width: 760px; margin: 32px auto; padding: 0 24px; line-height: 1.5; }
+      header { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #0f766e; padding-bottom: 14px; margin-bottom: 18px; }
+      .logo { width: 44px; height: 44px; border-radius: 10px; background: #0f766e; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.4rem; }
+      h1 { margin: 0; font-size: 1.5rem; }
+      .meta { color: #647086; font-size: 0.9rem; margin: 0; }
+      h2 { color: #115e59; border-left: 4px solid #e9b44c; padding-left: 10px; margin-top: 24px; }
+      ul { margin: 6px 0; padding-left: 20px; }
+      .alert { background: #fee2e2; border-left: 4px solid #d94848; padding: 10px 14px; border-radius: 6px; }
+      footer { margin-top: 30px; color: #647086; font-size: 0.85rem; border-top: 1px solid #d9e1e8; padding-top: 10px; }
+      @media print { body { margin: 16px; } header { page-break-after: avoid; } h2 { page-break-after: avoid; } }
+    </style></head><body>
+    <header>
+      <div class="logo">M</div>
+      <div>
+        <h1>MindPrep — ${escape(titleStr)}</h1>
+        <p class="meta">${escape(subject || "")} • ${escape(dateStr)}</p>
+      </div>
+    </header>
+    <h2>1. Idée centrale</h2><p>${escape(model.mainIdea || "—")}</p>
+    ${model.keywords?.length ? `<h2>2. Concepts clés</h2>${list(model.keywords)}` : ""}
+    ${model.schema ? `<h2>3. Modélisation</h2><p>${escape(model.schema)}</p>` : ""}
+    ${model.relations?.length ? `<h2>4. Relations entre notions</h2>${list(model.relations)}` : ""}
+    ${model.compression?.length ? `<h2>5. Compression intelligente</h2>${list(model.compression)}` : ""}
+    ${model.rules?.length ? `<h2>6. Règles pédagogiques</h2>${list(model.rules)}` : ""}
+    ${model.reconstruction?.length ? `<h2>7. Plan de reconstruction</h2>${list(model.reconstruction)}` : ""}
+    ${model.applications?.length ? `<h2>8. Applications pratiques</h2>${list(model.applications)}` : ""}
+    ${model.alerts?.length ? `<h2>Alertes critiques</h2><div class="alert">${list(model.alerts)}</div>` : ""}
+    <footer>Généré par MindPrep — Préparation intelligente aux examens par IA</footer>
+    <script>window.addEventListener("load", () => { setTimeout(() => window.print(), 200); });</script>
+    </body></html>`;
+}
+
+/**
+ * Télécharge un blob avec le nom de fichier indiqué.
+ */
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 200);
+}
+
+/**
+ * Construit un fichier .doc compatible Word (HTML enveloppé).
+ */
+function buildCourseDocBlob(model, subject) {
+  const html = buildCoursePrintableHtml(model, subject);
+  const wrapped = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"/></head><body>${html.replace(/^[\s\S]*?<body>/i, "").replace(/<\/body>[\s\S]*$/i, "")}</body></html>`;
+  return new Blob([wrapped], { type: "application/msword" });
+}
+
+if (downloadCoursePdfBtn) {
+  downloadCoursePdfBtn.addEventListener("click", () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour exporter en PDF.");
+      return;
+    }
+    const html = buildCoursePrintableHtml(lastCourseModel, lastCourseSubject);
+    const win = window.open("", "_blank");
+    if (!win) {
+      showToast("Le navigateur a bloqué la fenêtre d'impression. Autorise les pop-ups pour exporter en PDF.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    showToast("Fenêtre d'impression ouverte — choisis 'Enregistrer en PDF'.");
+  });
+}
+
+if (downloadCourseDocBtn) {
+  downloadCourseDocBtn.addEventListener("click", () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour exporter en Word.");
+      return;
+    }
+    const blob = buildCourseDocBlob(lastCourseModel, lastCourseSubject);
+    const safeTitle = (courseTitle.value.trim() || lastCourseModel.mainIdea || "cours-mindprep").replace(/[^a-zA-Z0-9-_]+/g, "-").slice(0, 60);
+    triggerDownload(blob, `mindprep-${safeTitle}.doc`);
+    showToast("Téléchargement du fichier Word lancé.");
+  });
+}
+
+if (copyCourseSummaryBtn) {
+  copyCourseSummaryBtn.addEventListener("click", async () => {
+    if (!lastCourseModel) {
+      showToast("Génère d'abord un cours pour copier le résumé.");
+      return;
+    }
+    const text = buildCourseSummaryText(lastCourseModel, lastCourseSubject);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Résumé copié dans le presse-papiers.");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast("Résumé copié.");
+      } catch {
+        showToast("Impossible de copier automatiquement. Sélectionne manuellement le résumé.");
+      }
+      ta.remove();
+    }
+  });
+}
+
 document.querySelector("#notifyBtn").addEventListener("click", () => {
   showToast("Rappel intelligent activé pour ta prochaine session de 30 minutes.");
 });
 
 document.querySelector("#upgradeInline").addEventListener("click", () => {
-  setView("progress");
-  document.querySelector("#pricingPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+  openPaywall("student");
 });
 
 document.querySelector("#startTrial").addEventListener("click", () => {
-  showToast("Essai Premium lancé dans la maquette. Stripe sera connecté côté backend.");
+  // Lance directement la simulation d'activation (essai gratuit 7 jours)
+  simulatePaymentSuccess("student", null, { trial: true, durationDays: 7 });
 });
 
-document.querySelector("#proPlan").addEventListener("click", () => {
-  showToast("Plan Pro: analytics détaillées, rapports avancés et génération personnalisée.");
+const openPaywallBtn = document.querySelector("#openPaywallBtn");
+if (openPaywallBtn) {
+  openPaywallBtn.addEventListener("click", () => openPaywall());
+}
+
+/* ===== Paywall modal logic ===== */
+const paywallModal = document.querySelector("#paywallModal");
+const paywallTabs = document.querySelectorAll(".paywall-tab");
+const paywallCards = document.querySelectorAll("[data-plan-card]");
+const paywallPayment = document.querySelector("#paywallPayment");
+let selectedPlan = null;
+
+const planLabels = {
+  free: "Gratuit",
+  student: "Premium Étudiant",
+  teacher: "Premium Professeur",
+};
+
+const planFeatures = {
+  free: ["Résumé limité", "Nombre limité de cours", "Fonctions de base"],
+  student: [
+    "Résumés intelligents illimités",
+    "Fiches intelligentes",
+    "Quiz IA personnalisés",
+    "Téléchargement PDF / Word",
+    "Historique des cours sauvegardé",
+  ],
+  teacher: [
+    "Correction de copies illimitée",
+    "Analyse pédagogique détaillée",
+    "Statistiques élèves",
+    "Génération d'exercices",
+    "Tous les avantages Étudiant",
+  ],
+};
+
+function setActivePlanTab(plan) {
+  paywallTabs.forEach((t) => t.classList.toggle("active", t.dataset.plan === plan));
+  paywallCards.forEach((c) => c.classList.toggle("active", c.dataset.planCard === plan));
+}
+
+function openPaywall(plan = "student") {
+  if (!paywallModal) return;
+  setActivePlanTab(plan);
+  paywallPayment?.classList.add("is-hidden");
+  selectedPlan = null;
+  paywallModal.classList.remove("is-hidden");
+}
+
+function closePaywall() {
+  paywallModal?.classList.add("is-hidden");
+}
+
+paywallTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setActivePlanTab(tab.dataset.plan));
+});
+
+paywallModal?.querySelectorAll("[data-paywall-close]").forEach((el) => {
+  el.addEventListener("click", closePaywall);
+});
+
+paywallModal?.querySelectorAll("[data-select-plan]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const plan = btn.dataset.selectPlan;
+    if (plan === "free") {
+      closePaywall();
+      showToast("Tu continues en formule gratuite. Passe en Premium quand tu veux.");
+      return;
+    }
+    selectedPlan = plan;
+    paywallPayment?.classList.remove("is-hidden");
+    paywallPayment?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
+
+paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const method = btn.dataset.payment;
+    if (!selectedPlan) {
+      showToast("Choisis d'abord un plan Premium.");
+      return;
+    }
+    initiatePayment(selectedPlan, method);
+  });
+});
+
+/**
+ * Initie un paiement. Aucune clé API n'étant configurée, on simule un succès.
+ * Les fonctions par méthode sont des points d'intégration prêts à brancher.
+ */
+function initiatePayment(plan, method) {
+  const handlers = {
+    wave: (p) => paymentPlaceholder("Wave", p),
+    "orange-money": (p) => paymentPlaceholder("Orange Money", p),
+    "free-money": (p) => paymentPlaceholder("Free Money", p),
+    stripe: (p) => paymentPlaceholder("Stripe", p),
+    paypal: (p) => paymentPlaceholder("PayPal", p),
+  };
+  const handler = handlers[method];
+  if (!handler) return;
+  handler(plan);
+}
+
+/**
+ * Placeholder pour intégration future d'une vraie API de paiement.
+ * Affiche un toast puis simule un succès.
+ */
+function paymentPlaceholder(providerName, plan) {
+  showToast(`Initialisation du paiement via ${providerName}…`);
+  window.setTimeout(() => {
+    simulatePaymentSuccess(plan, providerName);
+  }, 900);
+}
+
+/**
+ * Simule l'activation post-paiement et affiche le modal de confirmation.
+ */
+function simulatePaymentSuccess(plan, providerName, opts = {}) {
+  closePaywall();
+  const durationDays = opts.durationDays ?? 30;
+  const isTrial = !!opts.trial;
+  const planLabel = planLabels[plan] || plan;
+  const features = planFeatures[plan] || [];
+
+  const messageEl = document.querySelector("#paymentSuccessMessage");
+  const featuresEl = document.querySelector("#paymentSuccessFeatures");
+  const successModal = document.querySelector("#paymentSuccessModal");
+
+  if (messageEl) {
+    const via = providerName ? ` via ${providerName}` : "";
+    messageEl.textContent = isTrial
+      ? `Votre essai ${planLabel} est actif pour ${durationDays} jours${via}.`
+      : `Félicitations, votre abonnement ${planLabel} est actif pour ${durationDays} jours${via}.`;
+  }
+  if (featuresEl) {
+    featuresEl.innerHTML = features.map((f) => `<li>✓ ${f}</li>`).join("");
+  }
+  if (successModal) {
+    successModal.classList.remove("is-hidden");
+  }
+
+  // Mise à jour locale du tier utilisateur (en attendant intégration backend)
+  if (plan === "student") currentUser.tier = "premium";
+  if (plan === "teacher") currentUser.tier = "pro";
+}
+
+const paymentSuccessModal = document.querySelector("#paymentSuccessModal");
+paymentSuccessModal?.querySelectorAll("[data-success-close]").forEach((el) => {
+  el.addEventListener("click", () => paymentSuccessModal.classList.add("is-hidden"));
+});
+document.querySelector("#paymentSuccessStart")?.addEventListener("click", () => {
+  paymentSuccessModal?.classList.add("is-hidden");
+  setView("dashboard");
+  showToast("Bienvenue dans l'expérience Premium !");
 });
 
 document.querySelector("#examMode").addEventListener("click", () => {
@@ -1869,3 +2304,449 @@ async function initializeAuth() {
 }
 
 initializeAuth();
+
+/* ============================================================
+ * Entraînement intelligent — sujets, copies, progression
+ * ============================================================
+ *
+ * Le state ci-dessous reste en mémoire (et dans localStorage) tant que
+ * la persistance backend n'est pas branchée. Les fonctions du module
+ * core/training-engine sont des points d'extension explicites pour
+ * brancher une vraie IA / une vraie recherche d'annales plus tard.
+ */
+
+const TRAINING_STORAGE_KEY = "mindprep_training_state_v1";
+
+const trainingState = loadTrainingState();
+
+function loadTrainingState() {
+  const fallback = {
+    topics: [],
+    copies: [], // { id, topicId, topicTitle, topicLevel, subject, status, note, report, submittedAt }
+    currentLevel: 1,
+    lastCourseTitle: null,
+    lastCourseSubject: null,
+  };
+  try {
+    const raw = window.localStorage?.getItem(TRAINING_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return { ...fallback, ...parsed };
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveTrainingState() {
+  try {
+    window.localStorage?.setItem(TRAINING_STORAGE_KEY, JSON.stringify(trainingState));
+  } catch (e) {
+    // best effort
+  }
+}
+
+function isPremiumTier() {
+  return ["basic", "premium", "pro"].includes(currentUser.tier);
+}
+
+const FREE_TOPICS_LIMIT = 3;
+
+function visibleTopicsForUser(topics) {
+  return isPremiumTier() ? topics : topics.slice(0, FREE_TOPICS_LIMIT);
+}
+
+/* ---------- Onglets de la section Entraînement ---------- */
+
+document.querySelectorAll(".training-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.trainingTab;
+    document.querySelectorAll(".training-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".training-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.trainingPane === target);
+    });
+  });
+});
+
+/* ---------- Génération de sujets à partir du dernier cours ---------- */
+
+function generateAndShowTopicsFromCourse() {
+  const subject = lastCourseSubject || courseSubject?.value || "";
+  const title = (courseTitle?.value || "").trim() || (lastCourseModel?.mainIdea || "");
+  if (!title) {
+    showToast("Génère d'abord un cours intelligent pour obtenir des sujets adaptés.");
+    return false;
+  }
+  trainingState.topics = generateTopics(subject, title, { topicsPerLevel: 2 });
+  trainingState.lastCourseTitle = title;
+  trainingState.lastCourseSubject = subject;
+  saveTrainingState();
+  renderTopicsList();
+  switchTrainingTab("topics");
+  showToast(`${trainingState.topics.length} sujets générés sur 5 niveaux.`);
+  return true;
+}
+
+function switchTrainingTab(name) {
+  const tab = document.querySelector(`.training-tab[data-training-tab="${name}"]`);
+  if (tab) tab.click();
+}
+
+document.querySelector("#trainingGenerateFromCourse")?.addEventListener("click", () => {
+  setView("training");
+  generateAndShowTopicsFromCourse();
+});
+
+document.querySelector("#topicsRegenerate")?.addEventListener("click", () => {
+  generateAndShowTopicsFromCourse();
+});
+
+/* ---------- Filtres de sujets ---------- */
+
+const filterLevel = document.querySelector("#filterLevel");
+const filterType = document.querySelector("#filterType");
+const filterDuration = document.querySelector("#filterDuration");
+const filterQuery = document.querySelector("#filterQuery");
+
+[filterLevel, filterType, filterDuration, filterQuery].forEach((el) => {
+  el?.addEventListener("input", renderTopicsList);
+  el?.addEventListener("change", renderTopicsList);
+});
+
+function getActiveFilters() {
+  return {
+    level: filterLevel?.value || null,
+    type: filterType?.value || null,
+    maxDuration: filterDuration?.value || null,
+    query: filterQuery?.value || "",
+  };
+}
+
+function renderTopicsList() {
+  const listEl = document.querySelector("#topicsList");
+  if (!listEl) return;
+  if (!trainingState.topics.length) {
+    listEl.innerHTML = `<p class="empty-state">Aucun sujet pour le moment. Génère un cours puis clique sur « Regénérer des sujets ».</p>`;
+    return;
+  }
+  const filtered = searchTopics(trainingState.topics, getActiveFilters());
+  const visible = visibleTopicsForUser(filtered);
+  if (!visible.length) {
+    listEl.innerHTML = `<p class="empty-state">Aucun sujet ne correspond à ces filtres.</p>`;
+    return;
+  }
+  const lockedCount = filtered.length - visible.length;
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  listEl.innerHTML = visible
+    .map((t) => `
+      <article class="topic-card" data-topic-id="${t.id}">
+        <header>
+          <span class="topic-level level-${t.level}">${escape(levelById(t.level).short)}</span>
+          <span class="topic-type">${escape(topicTypeLabel(t.type))}</span>
+          <span class="topic-duration">⏱ ${t.durationMin} min</span>
+        </header>
+        <h4>${escape(t.title)}</h4>
+        <p>${escape(t.prompt)}</p>
+        <p class="topic-skill"><span class="topic-skill-label">Compétence évaluée :</span> ${escape(t.skill || topicTypeSkill(t.type))}</p>
+        <footer>
+          <span class="topic-subject">${escape(t.subject || "")}</span>
+          <button class="primary-button topic-answer-btn" type="button" data-topic-id="${t.id}">Traiter le sujet</button>
+        </footer>
+      </article>
+    `).join("") + (lockedCount > 0 ? `
+      <article class="topic-card topic-locked">
+        <h4>🔒 ${lockedCount} sujet${lockedCount > 1 ? "s" : ""} réservé${lockedCount > 1 ? "s" : ""} au Premium</h4>
+        <p>Passe en Premium pour débloquer tous les niveaux, la correction détaillée et la progression IA.</p>
+        <button class="primary-button" type="button" id="topicsLockedUpgrade">Voir les offres</button>
+      </article>` : "");
+
+  listEl.querySelectorAll(".topic-answer-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openTopicAnswerModal(btn.dataset.topicId));
+  });
+  document.querySelector("#topicsLockedUpgrade")?.addEventListener("click", () => {
+    document.querySelector("#paywallModal")?.classList.remove("is-hidden");
+  });
+}
+
+/* ---------- Modal de réponse ---------- */
+
+let activeTopicId = null;
+let activeAnswerFile = null;
+
+const topicModal = document.querySelector("#topicAnswerModal");
+const topicResultModal = document.querySelector("#topicResultModal");
+
+topicModal?.querySelectorAll("[data-topic-close]").forEach((el) => {
+  el.addEventListener("click", () => closeTopicModal());
+});
+topicResultModal?.querySelectorAll("[data-result-close]").forEach((el) => {
+  el.addEventListener("click", () => topicResultModal.classList.add("is-hidden"));
+});
+
+document.querySelectorAll(".topic-answer-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.answerMode;
+    document.querySelectorAll(".topic-answer-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".topic-answer-pane").forEach((p) => {
+      p.classList.toggle("active", p.dataset.answerPane === mode);
+    });
+  });
+});
+
+document.querySelector("#topicAnswerText")?.addEventListener("input", (e) => {
+  const words = (e.target.value || "").trim().split(/\s+/).filter(Boolean).length;
+  const el = document.querySelector("#topicAnswerCount");
+  if (el) el.textContent = `${words} mot${words > 1 ? "s" : ""}`;
+});
+
+document.querySelector("#topicAnswerFile")?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0] || null;
+  activeAnswerFile = file;
+  const el = document.querySelector("#topicAnswerFileName");
+  if (el) el.textContent = file ? `${file.name} (${Math.round(file.size / 1024)} Ko)` : "Aucun fichier sélectionné.";
+});
+
+function openTopicAnswerModal(topicId) {
+  const topic = trainingState.topics.find((t) => t.id === topicId);
+  if (!topic) return;
+  activeTopicId = topicId;
+  activeAnswerFile = null;
+  document.querySelector("#topicModalLevel").textContent = levelById(topic.level).label;
+  document.querySelector("#topicModalTitle").textContent = `${topicTypeLabel(topic.type)} — ${topic.title}`;
+  document.querySelector("#topicModalPrompt").textContent = topic.prompt;
+  const txt = document.querySelector("#topicAnswerText");
+  if (txt) txt.value = "";
+  const cnt = document.querySelector("#topicAnswerCount");
+  if (cnt) cnt.textContent = "0 mots";
+  const fileInput = document.querySelector("#topicAnswerFile");
+  if (fileInput) fileInput.value = "";
+  const fname = document.querySelector("#topicAnswerFileName");
+  if (fname) fname.textContent = "Aucun fichier sélectionné.";
+  document.querySelectorAll(".topic-answer-tab").forEach((t, i) => t.classList.toggle("active", i === 0));
+  document.querySelectorAll(".topic-answer-pane").forEach((p) => p.classList.toggle("active", p.dataset.answerPane === "text"));
+  topicModal?.classList.remove("is-hidden");
+}
+
+function closeTopicModal() {
+  topicModal?.classList.add("is-hidden");
+  activeTopicId = null;
+  activeAnswerFile = null;
+}
+
+document.querySelector("#submitTopicAnswer")?.addEventListener("click", () => {
+  const topic = trainingState.topics.find((t) => t.id === activeTopicId);
+  if (!topic) return;
+  const text = document.querySelector("#topicAnswerText")?.value || "";
+  const fileName = activeAnswerFile?.name || null;
+  if (!text.trim() && !fileName) {
+    showToast("Écris une réponse ou dépose un fichier avant d'envoyer.");
+    return;
+  }
+  // Hook : ici, en production, on uploadrait le fichier vers Supabase Storage
+  // ou on enverrait le texte à une API de correction IA.
+  const report = gradeAnswer(topic, { text, fileName, fileType: activeAnswerFile?.type });
+  const copyId = `copy_${Date.now()}`;
+  const copy = {
+    id: copyId,
+    topicId: topic.id,
+    topicTitle: topic.title,
+    topicPrompt: topic.prompt,
+    topicLevel: topic.level,
+    topicType: topic.type,
+    subject: topic.subject,
+    status: isPremiumTier() ? "Corrigée" : "Corrigée (aperçu)",
+    note: report.note,
+    report: { ...report, subject: topic.subject },
+    submittedAt: new Date().toISOString(),
+    fileName,
+  };
+  trainingState.copies.unshift(copy);
+  // Adaptation du niveau
+  const reco = recommendNextLevel(trainingState.copies.map((c) => c.report), trainingState.currentLevel);
+  trainingState.currentLevel = reco.nextLevel;
+  saveTrainingState();
+  renderCopiesTable();
+  renderTrainingHistory();
+  renderProgressStats();
+  renderRecommendedLevel(reco);
+  closeTopicModal();
+  showCorrectionResult(copy);
+});
+
+function showCorrectionResult(copy) {
+  const r = copy.report;
+  document.querySelector("#topicResultTitle").textContent = `${copy.topicTitle} — Niveau ${copy.topicLevel}`;
+  document.querySelector("#topicResultGrade").textContent = `${r.note}/${r.noteOver}`;
+  // Axes pédagogiques en pourcentages : Compréhension / Structure / Argumentation / Clarté
+  const pct = r.pedagogicalPercents || {};
+  const setAxis = (fillId, pctId, name) => {
+    const v = Math.round(pct[name] || 0);
+    const fill = document.querySelector(`#${fillId}`);
+    const lbl = document.querySelector(`#${pctId}`);
+    if (fill) fill.style.width = `${v}%`;
+    if (lbl) lbl.textContent = `${v}%`;
+  };
+  setAxis("resAxisCompFill", "resAxisCompPct", "Compréhension");
+  setAxis("resAxisStructFill", "resAxisStructPct", "Structure");
+  setAxis("resAxisArgFill", "resAxisArgPct", "Argumentation");
+  setAxis("resAxisClarFill", "resAxisClarPct", "Clarté");
+  const renderCriteria = (list) => list.map((c) => `<li><span>${c.name}</span><strong>${c.value}/5</strong></li>`).join("");
+  document.querySelector("#resultFondList").innerHTML = renderCriteria(r.fond.criteria);
+  document.querySelector("#resultFormeList").innerHTML = renderCriteria(r.forme.criteria);
+  const ul = (arr) => arr.length ? arr.map((s) => `<li>${s}</li>`).join("") : "<li>—</li>";
+  // Pour le tier gratuit : on masque les détails forces/faiblesses/conseils complets
+  if (!isPremiumTier()) {
+    document.querySelector("#resultStrengths").innerHTML = `<li>${r.strengths[0] || "Bon début, continue !"}</li>`;
+    document.querySelector("#resultWeaknesses").innerHTML = `<li>🔒 Détails complets réservés au Premium.</li>`;
+    document.querySelector("#resultAdvice").innerHTML = `<li>🔒 Conseils IA détaillés réservés au Premium.</li>`;
+  } else {
+    document.querySelector("#resultStrengths").innerHTML = ul(r.strengths);
+    document.querySelector("#resultWeaknesses").innerHTML = ul(r.weaknesses);
+    document.querySelector("#resultAdvice").innerHTML = ul(r.advice);
+  }
+  topicResultModal?.classList.remove("is-hidden");
+}
+
+/* ---------- Table des copies ---------- */
+
+function renderCopiesTable() {
+  const tbody = document.querySelector("#copiesTableBody");
+  const countEl = document.querySelector("#copiesCount");
+  if (countEl) countEl.textContent = String(trainingState.copies.length);
+  if (!tbody) return;
+  if (!trainingState.copies.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Aucune copie pour le moment. Choisis un sujet à traiter pour commencer.</td></tr>`;
+    return;
+  }
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  tbody.innerHTML = trainingState.copies.map((c) => `
+    <tr>
+      <td>
+        <strong>${escape(c.topicTitle)}</strong>
+        <small>${escape(topicTypeLabel(c.topicType))}</small>
+      </td>
+      <td><span class="topic-level level-${c.topicLevel}">${escape(levelById(c.topicLevel).short)}</span></td>
+      <td><span class="status-pill status-${c.status.startsWith("Corr") ? "ok" : "pending"}">${escape(c.status)}</span></td>
+      <td><strong>${c.note}/${c.report.noteOver}</strong></td>
+      <td><small>${escape((c.report.advice && c.report.advice[0]) || "—")}</small></td>
+      <td><button class="text-button" type="button" data-view-copy="${c.id}">Voir</button></td>
+    </tr>
+  `).join("");
+  tbody.querySelectorAll("[data-view-copy]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const copy = trainingState.copies.find((c) => c.id === btn.dataset.viewCopy);
+      if (copy) showCorrectionResult(copy);
+    });
+  });
+  // Mini résumé de progression sous la table
+  const stats = computeProgressStats(trainingState.copies.map((c) => c.report));
+  const summary = document.querySelector("#copiesProgressSummary");
+  if (summary) {
+    summary.innerHTML = `
+      <div><span>Copies</span><strong>${stats.copyCount}</strong></div>
+      <div><span>Note moyenne</span><strong>${stats.averageNote || 0}/20</strong></div>
+      <div><span>Niveau actuel</span><strong>${trainingState.currentLevel}</strong></div>
+    `;
+  }
+}
+
+/* ---------- Historique ---------- */
+
+function renderTrainingHistory() {
+  const ul = document.querySelector("#trainingHistory");
+  if (!ul) return;
+  if (!trainingState.copies.length) {
+    ul.innerHTML = `<li class="empty-state">Pas encore d'entraînement enregistré.</li>`;
+    return;
+  }
+  const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  ul.innerHTML = trainingState.copies.slice(0, 20).map((c) => {
+    const d = new Date(c.submittedAt);
+    const date = d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `
+      <li>
+        <div>
+          <strong>${escape(c.topicTitle)}</strong>
+          <small>${escape(topicTypeLabel(c.topicType))} · Niveau ${c.topicLevel} · ${date}</small>
+        </div>
+        <span class="history-grade">${c.note}/${c.report.noteOver}</span>
+      </li>
+    `;
+  }).join("");
+}
+
+/* ---------- Progression intelligente ---------- */
+
+function renderProgressStats() {
+  const stats = computeProgressStats(trainingState.copies.map((c) => c.report));
+  document.querySelector("#statCopyCount").textContent = String(stats.copyCount);
+  document.querySelector("#statAvgNote").textContent = stats.copyCount ? `${stats.averageNote}/20` : "--/20";
+  const successEl = document.querySelector("#statSuccessRate");
+  if (successEl) successEl.textContent = stats.copyCount ? `${stats.successRate}%` : "--%";
+  const successBar = document.querySelector("#successBarFill");
+  if (successBar) successBar.style.width = `${stats.copyCount ? stats.successRate : 0}%`;
+  document.querySelector("#statLevel").textContent = String(trainingState.currentLevel);
+
+  // Badges : Série de réussite + 7 jours actifs
+  const activity = computeActivityStats(trainingState.copies, 7);
+  const streakBadge = document.querySelector('[data-badge="streak"]');
+  const streakLabel = document.querySelector("#badgeStreakLabel");
+  if (streakBadge && streakLabel) {
+    if (stats.currentStreak >= 2) {
+      streakBadge.classList.remove("is-locked");
+      streakBadge.classList.add("is-unlocked");
+      streakLabel.textContent = `🔥 ${stats.currentStreak} copies réussies de suite (record : ${stats.bestStreak})`;
+    } else {
+      streakBadge.classList.add("is-locked");
+      streakBadge.classList.remove("is-unlocked");
+      streakLabel.textContent = stats.currentStreak === 1
+        ? "1 copie réussie — enchaîne pour débloquer la série"
+        : "Aucune série en cours. Réussis 2 copies de suite (≥10/20).";
+    }
+  }
+  const activeBadge = document.querySelector('[data-badge="active7d"]');
+  const activeLabel = document.querySelector("#badgeActiveLabel");
+  if (activeBadge && activeLabel) {
+    if (activity.isActive7d) {
+      activeBadge.classList.remove("is-locked");
+      activeBadge.classList.add("is-unlocked");
+      activeLabel.textContent = `📅 7 / 7 jours actifs cette semaine — bravo !`;
+    } else {
+      activeBadge.classList.add("is-locked");
+      activeBadge.classList.remove("is-unlocked");
+      activeLabel.textContent = `${activity.activeDays} / 7 jours actifs cette semaine`;
+    }
+  }
+
+  const renderSub = (host, list, empty) => {
+    const el = document.querySelector(host);
+    if (!el) return;
+    if (!list.length) { el.innerHTML = `<p class="empty-state">${empty}</p>`; return; }
+    el.innerHTML = list.map((s) => `
+      <div class="subject-row">
+        <span>${s.name || "—"}</span>
+        <strong>${s.avg}/20</strong>
+        <small>${s.count} copie${s.count > 1 ? "s" : ""}</small>
+      </div>
+    `).join("");
+  };
+  renderSub("#strongSubjects", stats.strongSubjects, "Pas encore de matière forte identifiée.");
+  renderSub("#weakSubjects", stats.weakSubjects, "Pas encore de matière à renforcer identifiée.");
+}
+
+function renderRecommendedLevel(reco) {
+  const r = reco || recommendNextLevel(trainingState.copies.map((c) => c.report), trainingState.currentLevel);
+  const lvl = levelById(r.nextLevel);
+  document.querySelector("#trainingCurrentLevel").textContent = lvl.label;
+  document.querySelector("#trainingLevelReason").textContent = `${r.reason} ${r.action}`;
+  const advice = document.querySelector("#progressAdvice");
+  if (advice) advice.textContent = r.action;
+}
+
+/* ---------- Initialisation au chargement ---------- */
+
+renderTopicsList();
+renderCopiesTable();
+renderTrainingHistory();
+renderProgressStats();
+renderRecommendedLevel();
+

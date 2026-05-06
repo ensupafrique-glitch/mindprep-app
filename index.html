@@ -102,9 +102,13 @@
             <span aria-hidden="true">✓</span>
             Mini-test
           </button>
+          <button class="nav-item" data-view="training" type="button">
+            <span aria-hidden="true">★</span>
+            Entraînement intelligent
+          </button>
           <button class="nav-item" data-view="copies" type="button">
             <span aria-hidden="true">▣</span>
-            Copies
+            Copies à corriger
           </button>
           <button class="nav-item" data-view="courses" type="button">
             <span aria-hidden="true">☰</span>
@@ -297,25 +301,346 @@
           </div>
         </section>
 
+        <section class="view" id="training" aria-labelledby="trainingTitle">
+          <div class="training-hero">
+            <div>
+              <p class="eyebrow">Entraînement intelligent</p>
+              <h2 id="trainingTitle">MindPrep devient ton coach pédagogique</h2>
+              <p class="training-tagline">
+                Plus qu'un résumé : un entraînement actif, des sujets adaptés à ton niveau,
+                une correction sur le fond et la forme, et une progression qui s'ajuste à toi.
+              </p>
+            </div>
+            <div class="training-level-card" aria-label="Niveau recommandé">
+              <span class="eyebrow">Niveau recommandé</span>
+              <strong id="trainingCurrentLevel">Niveau 1 — Facile</strong>
+              <p id="trainingLevelReason">Rends une première copie pour calibrer ton niveau.</p>
+            </div>
+          </div>
+
+          <div class="training-tabs" role="tablist" aria-label="Sections d'entraînement">
+            <button class="training-tab active" type="button" role="tab" data-training-tab="mini-tests">Mini-tests</button>
+            <button class="training-tab" type="button" role="tab" data-training-tab="topics">Sujets à traiter</button>
+            <button class="training-tab" type="button" role="tab" data-training-tab="copies">Copies à corriger</button>
+            <button class="training-tab" type="button" role="tab" data-training-tab="history">Historique</button>
+            <button class="training-tab" type="button" role="tab" data-training-tab="progress">Progression</button>
+          </div>
+
+          <!-- Mini-tests -->
+          <section class="training-pane active" data-training-pane="mini-tests" aria-label="Mini-tests rapides">
+            <div class="training-grid">
+              <article class="training-card">
+                <p class="eyebrow">Mini-test rapide</p>
+                <h3>Active la connaissance que tu viens d'apprendre</h3>
+                <p>
+                  Lance un mini-test ciblé sur le dernier cours analysé.
+                  Idéal pour vérifier que tu as compris avant de passer à un sujet de rédaction.
+                </p>
+                <div class="hero-actions">
+                  <button class="primary-button" data-view-trigger="practice" type="button">Lancer un mini-test</button>
+                  <button class="secondary-button" id="trainingGenerateFromCourse" type="button">Générer depuis mon cours</button>
+                </div>
+                <p class="training-hint">
+                  Astuce : génère d'abord un cours dans « La compréhension facilitée du Cours »,
+                  puis reviens ici pour obtenir des sujets à plusieurs niveaux.
+                </p>
+              </article>
+
+              <article class="training-card">
+                <p class="eyebrow">Comment ça marche</p>
+                <h3>Apprentissage actif en 4 étapes</h3>
+                <ol class="training-steps">
+                  <li><strong>Génère</strong> un cours intelligent (résumé + concepts).</li>
+                  <li><strong>Choisis</strong> un sujet adapté à ton niveau (1 à 5).</li>
+                  <li><strong>Réponds</strong> par écrit, ou dépose une photo, un PDF ou un Word.</li>
+                  <li><strong>Reçois</strong> une correction détaillée fond + forme et tes prochaines cibles.</li>
+                </ol>
+              </article>
+            </div>
+          </section>
+
+          <!-- Sujets à traiter -->
+          <section class="training-pane" data-training-pane="topics" aria-label="Sujets à traiter">
+            <article class="training-filters">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Sujets intelligents</p>
+                  <h3>Trouve un sujet adapté à ton niveau</h3>
+                </div>
+                <button class="secondary-button" id="topicsRegenerate" type="button">Regénérer des sujets</button>
+              </div>
+              <div class="filters-grid">
+                <label class="field">
+                  <span>Difficulté</span>
+                  <select id="filterLevel">
+                    <option value="">Tous les niveaux</option>
+                    <option value="1">Niveau 1 — Facile</option>
+                    <option value="2">Niveau 2 — Intermédiaire</option>
+                    <option value="3">Niveau 3 — Moyen</option>
+                    <option value="4">Niveau 4 — Avancé</option>
+                    <option value="5">Niveau 5 — Difficile</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Type</span>
+                  <select id="filterType">
+                    <option value="">Tous les types</option>
+                    <option value="dissertation">Dissertation</option>
+                    <option value="cas-pratique">Cas pratique</option>
+                    <option value="analyse">Analyse</option>
+                    <option value="synthese">Synthèse</option>
+                    <option value="redaction">Rédaction</option>
+                    <option value="reflexion">Réflexion</option>
+                    <option value="exercice">Exercice</option>
+                    <option value="mini-test">Mini-test</option>
+                    <option value="qcm">QCM</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Durée max (min)</span>
+                  <input type="number" id="filterDuration" min="5" max="240" step="5" placeholder="ex: 30" />
+                </label>
+                <label class="field">
+                  <span>Recherche</span>
+                  <input type="search" id="filterQuery" placeholder="thème, mot-clé, matière..." />
+                </label>
+              </div>
+              <p class="training-source-note" id="topicsSourceNote">
+                Source : moteur local MindPrep. Hook prêt pour brancher une recherche externe d'annales,
+                cas pratiques, exercices universitaires et professionnels.
+              </p>
+            </article>
+
+            <div class="topics-list" id="topicsList" aria-live="polite">
+              <p class="empty-state">Génère un cours pour obtenir des sujets adaptés.</p>
+            </div>
+          </section>
+
+          <!-- Copies à corriger (table) -->
+          <section class="training-pane" data-training-pane="copies" aria-label="Copies à corriger">
+            <article class="copies-table-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Mes copies</p>
+                  <h3>Suivi de tes rendus et corrections</h3>
+                </div>
+                <span class="time-chip"><span id="copiesCount">0</span> copies</span>
+              </div>
+              <div class="copies-table-wrap">
+                <table class="copies-table">
+                  <thead>
+                    <tr>
+                      <th>Sujet</th>
+                      <th>Niveau</th>
+                      <th>Statut</th>
+                      <th>Note</th>
+                      <th>Feedback</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="copiesTableBody">
+                    <tr class="empty-row"><td colspan="6">Aucune copie pour le moment. Choisis un sujet à traiter pour commencer.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="copies-progress-summary" id="copiesProgressSummary"></div>
+            </article>
+          </section>
+
+          <!-- Historique -->
+          <section class="training-pane" data-training-pane="history" aria-label="Historique des entraînements">
+            <article class="training-card">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Historique</p>
+                  <h3>Tes derniers entraînements</h3>
+                </div>
+              </div>
+              <ul class="training-history" id="trainingHistory">
+                <li class="empty-state">Pas encore d'entraînement enregistré.</li>
+              </ul>
+            </article>
+          </section>
+
+          <!-- Progression -->
+          <section class="training-pane" data-training-pane="progress" aria-label="Progression intelligente">
+            <div class="training-grid">
+              <article class="training-card">
+                <p class="eyebrow">Progression</p>
+                <h3>Évolution et niveau actuel</h3>
+                <div class="progress-stats" id="progressStats">
+                  <div><span>Copies rendues</span><strong id="statCopyCount">0</strong></div>
+                  <div><span>Note moyenne</span><strong id="statAvgNote">--/20</strong></div>
+                  <div><span>Taux de réussite</span><strong id="statSuccessRate">--%</strong></div>
+                  <div><span>Niveau</span><strong id="statLevel">1</strong></div>
+                </div>
+                <div class="success-bar" aria-label="Taux de réussite">
+                  <div class="success-bar-fill" id="successBarFill" style="width:0%"></div>
+                </div>
+                <p class="training-hint" id="progressAdvice">
+                  Dépose tes premières copies pour activer la progression intelligente.
+                </p>
+              </article>
+              <article class="training-card">
+                <p class="eyebrow">Badges</p>
+                <h3>Tes succès du moment</h3>
+                <div class="badge-list" id="badgeList" aria-live="polite">
+                  <div class="badge is-locked" data-badge="streak">
+                    <div class="badge-icon" aria-hidden="true">🔥</div>
+                    <div class="badge-body">
+                      <strong>Série de réussite</strong>
+                      <span id="badgeStreakLabel">Aucune série en cours</span>
+                    </div>
+                  </div>
+                  <div class="badge is-locked" data-badge="active7d">
+                    <div class="badge-icon" aria-hidden="true">📅</div>
+                    <div class="badge-body">
+                      <strong>7 jours actifs</strong>
+                      <span id="badgeActiveLabel">0 / 7 jours actifs cette semaine</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="training-hint">L'addiction positive : entraîne-toi un peu chaque jour pour décrocher les badges.</p>
+              </article>
+              <article class="training-card">
+                <p class="eyebrow">Forces &amp; faiblesses</p>
+                <h3>Matières fortes et matières à renforcer</h3>
+                <div class="subject-strength" id="strongSubjects"></div>
+                <h4>À renforcer</h4>
+                <div class="subject-strength is-weak" id="weakSubjects"></div>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <!-- Modal de réponse à un sujet -->
+        <div class="topic-modal is-hidden" id="topicAnswerModal" role="dialog" aria-modal="true" aria-labelledby="topicModalTitle">
+          <div class="paywall-backdrop" data-topic-close></div>
+          <div class="topic-dialog" role="document">
+            <button class="paywall-close" type="button" aria-label="Fermer" data-topic-close>×</button>
+            <p class="eyebrow" id="topicModalLevel">Niveau 1</p>
+            <h3 id="topicModalTitle">Sujet à traiter</h3>
+            <p class="topic-modal-prompt" id="topicModalPrompt"></p>
+
+            <div class="topic-answer-tabs" role="tablist">
+              <button class="topic-answer-tab active" type="button" data-answer-mode="text">Écrire</button>
+              <button class="topic-answer-tab" type="button" data-answer-mode="upload">Déposer un fichier</button>
+            </div>
+
+            <div class="topic-answer-pane active" data-answer-pane="text">
+              <textarea id="topicAnswerText" rows="10" placeholder="Rédige ta réponse ici. Tu peux structurer en paragraphes."></textarea>
+              <p class="training-hint" id="topicAnswerCount">0 mots</p>
+            </div>
+
+            <div class="topic-answer-pane" data-answer-pane="upload">
+              <label class="copy-dropzone" for="topicAnswerFile">
+                <input id="topicAnswerFile" type="file" accept="image/*,.pdf,.doc,.docx" />
+                <span>Photo, PDF ou document Word</span>
+                <strong>Glisse ton fichier ou clique pour ajouter</strong>
+              </label>
+              <p class="training-hint" id="topicAnswerFileName">Aucun fichier sélectionné.</p>
+            </div>
+
+            <div class="topic-modal-actions">
+              <button class="secondary-button" type="button" data-topic-close>Annuler</button>
+              <button class="primary-button" id="submitTopicAnswer" type="button">Envoyer pour correction</button>
+            </div>
+            <p class="paywall-disclaimer">
+              ⚠️ Démo : la correction utilise un moteur local simulé fond/forme. Hook prêt à brancher une vraie IA correctrice.
+            </p>
+          </div>
+        </div>
+
+        <!-- Modal de résultat de correction -->
+        <div class="topic-modal is-hidden" id="topicResultModal" role="dialog" aria-modal="true" aria-labelledby="topicResultTitle">
+          <div class="paywall-backdrop" data-result-close></div>
+          <div class="topic-dialog" role="document">
+            <button class="paywall-close" type="button" aria-label="Fermer" data-result-close>×</button>
+            <p class="eyebrow">Correction MindPrep</p>
+            <h3 id="topicResultTitle">Retour pédagogique</h3>
+            <div class="result-grade">
+              <span>Note globale</span>
+              <strong id="topicResultGrade">--/20</strong>
+            </div>
+
+            <div class="ai-axes" id="resultAiAxes" aria-label="Analyse détaillée par axe pédagogique">
+              <p class="eyebrow ai-axes-title">Analyse détaillée</p>
+              <div class="ai-axis"><span>Compréhension</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisCompFill" style="width:0%"></div></div><strong id="resAxisCompPct">--%</strong></div>
+              <div class="ai-axis"><span>Structure</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisStructFill" style="width:0%"></div></div><strong id="resAxisStructPct">--%</strong></div>
+              <div class="ai-axis"><span>Argumentation</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisArgFill" style="width:0%"></div></div><strong id="resAxisArgPct">--%</strong></div>
+              <div class="ai-axis"><span>Clarté</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="resAxisClarFill" style="width:0%"></div></div><strong id="resAxisClarPct">--%</strong></div>
+            </div>
+
+            <div class="result-grid">
+              <div>
+                <h4>Fond</h4>
+                <ul class="criteria-list" id="resultFondList"></ul>
+              </div>
+              <div>
+                <h4>Forme</h4>
+                <ul class="criteria-list" id="resultFormeList"></ul>
+              </div>
+            </div>
+
+            <div class="result-feedback">
+              <div>
+                <h4>Forces</h4>
+                <ul id="resultStrengths"></ul>
+              </div>
+              <div>
+                <h4>Faiblesses</h4>
+                <ul id="resultWeaknesses"></ul>
+              </div>
+              <div>
+                <h4>Conseils IA</h4>
+                <ul id="resultAdvice"></ul>
+              </div>
+            </div>
+
+            <div class="topic-modal-actions">
+              <button class="primary-button" type="button" data-result-close>Fermer</button>
+            </div>
+          </div>
+        </div>
+
         <section class="view" id="copies">
           <div class="copies-layout">
             <article class="copy-upload-panel">
               <div class="section-heading">
                 <div>
-                  <p class="eyebrow">Correction de copie</p>
-                  <h2>Photographie ton devoir ou ton examen</h2>
+                  <p class="eyebrow">Dépôt de copies</p>
+                  <h2>Envoie ta copie en deux clics</h2>
                 </div>
                 <span class="time-chip">IA correctrice</span>
               </div>
 
-              <label class="copy-dropzone" for="copyFile">
-                <input id="copyFile" type="file" accept="image/*,.pdf" capture="environment" />
-                <span>Ajouter une photo ou un PDF</span>
-                <strong>Copie de devoir, examen blanc, dissertation, exercice ou brouillon</strong>
-              </label>
+              <p class="copy-ux-note">
+                Tu peux <strong>rédiger directement</strong> ta copie dans la zone ci-dessous,
+                <strong>ou déposer un fichier</strong> (PDF, Word, image). MindPrep s'occupe du reste.
+              </p>
 
-              <div class="copy-preview" id="copyPreview">
-                <span>Aucune copie ajoutée</span>
+              <div class="copy-mode-tabs" role="tablist" aria-label="Mode de dépôt">
+                <button class="copy-mode-tab active" type="button" role="tab" data-copy-mode="write">✍️ Zone rédaction</button>
+                <button class="copy-mode-tab" type="button" role="tab" data-copy-mode="upload">📎 Upload</button>
+              </div>
+
+              <div class="copy-mode-pane active" data-copy-pane="write">
+                <label class="field">
+                  <span>Ta copie</span>
+                  <textarea id="copyText" rows="10" placeholder="Rédige ici ta copie : dissertation, étude de cas, analyse, synthèse… Tu peux organiser en paragraphes."></textarea>
+                </label>
+                <p class="training-hint" id="copyTextCount">0 mots</p>
+              </div>
+
+              <div class="copy-mode-pane" data-copy-pane="upload">
+                <label class="copy-dropzone" for="copyFile">
+                  <input id="copyFile" type="file" accept="image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" capture="environment" />
+                  <span>📎 PDF, Word ou image</span>
+                  <strong>Glisse ton fichier ou clique pour ajouter (copie de devoir, examen blanc, dissertation, exercice ou brouillon)</strong>
+                </label>
+                <div class="copy-preview" id="copyPreview">
+                  <span>Aucun fichier ajouté</span>
+                </div>
               </div>
 
               <label class="field">
@@ -335,19 +660,31 @@
 
               <label class="field">
                 <span>Consigne ou sujet</span>
-                <textarea id="copyPrompt" rows="4" placeholder="Ex: Dissertation: La liberté est-elle une illusion ?"></textarea>
+                <textarea id="copyPrompt" rows="3" placeholder="Ex: Dissertation: La liberté est-elle une illusion ?"></textarea>
               </label>
 
-              <button class="primary-button" id="analyzeCopy" type="button">Lire et corriger la copie</button>
+              <button class="primary-button" id="analyzeCopy" type="button">Envoyer ma copie</button>
+              <p class="paywall-disclaimer copy-disclaimer">
+                ⚠️ Démo : la correction utilise un moteur local simulé fond/forme. Hook prêt à brancher une vraie IA correctrice (OpenAI, Claude).
+              </p>
             </article>
 
             <article class="copy-result-panel">
-              <p class="eyebrow">Résultat</p>
+              <p class="eyebrow">Correction IA</p>
               <h2 id="copyResultTitle">En attente de copie</h2>
               <div class="grade-card">
-                <span>Note estimée</span>
+                <span>Note globale</span>
                 <strong id="copyGrade">--/20</strong>
               </div>
+
+              <div class="ai-axes" id="copyAiAxes" aria-label="Analyse détaillée par axe pédagogique">
+                <p class="eyebrow ai-axes-title">Analyse détaillée</p>
+                <div class="ai-axis"><span>Compréhension</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisCompFill" style="width:0%"></div></div><strong id="copyAxisCompPct">--%</strong></div>
+                <div class="ai-axis"><span>Structure</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisStructFill" style="width:0%"></div></div><strong id="copyAxisStructPct">--%</strong></div>
+                <div class="ai-axis"><span>Argumentation</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisArgFill" style="width:0%"></div></div><strong id="copyAxisArgPct">--%</strong></div>
+                <div class="ai-axis"><span>Clarté</span><div class="ai-axis-bar"><div class="ai-axis-fill" id="copyAxisClarFill" style="width:0%"></div></div><strong id="copyAxisClarPct">--%</strong></div>
+              </div>
+
               <div class="correction-box" id="copyReading">
                 <strong>Lecture</strong>
                 <span>MindPrep affichera ici ce qu’il a compris de la copie.</span>
@@ -422,9 +759,36 @@
                 <textarea id="courseNotes" rows="8" placeholder="Colle ici ton cours. MindPrep va le compresser en mots-clés, relations, schéma et plan d’entraînement."></textarea>
               </label>
 
+              <div class="generation-preview" aria-label="Ce que MindPrep va générer">
+                <strong>MindPrep va générer&nbsp;:</strong>
+                <ul>
+                  <li>Idée centrale</li>
+                  <li>Concepts clés</li>
+                  <li>Relations entre notions</li>
+                  <li>Applications pratiques</li>
+                  <li>Quiz intelligents</li>
+                  <li>Plan de révision</li>
+                  <li>Fiche PDF téléchargeable</li>
+                </ul>
+                <span class="generation-hint">⏱ Temps estimé : 5 à 15 secondes selon la longueur du cours.</span>
+              </div>
+
               <div class="hero-actions">
                 <button class="primary-button" id="generateCourse" type="button">Créer le cours intelligent</button>
                 <button class="secondary-button" id="loadCourseExample" type="button">Exemple guidé</button>
+              </div>
+
+              <div class="course-export-actions" id="courseExportActions" aria-label="Actions d'export du cours" data-disabled="true">
+                <button class="export-button" id="downloadCoursePdf" type="button" disabled>
+                  <span aria-hidden="true">📄</span> Télécharger en PDF
+                </button>
+                <button class="export-button" id="downloadCourseDoc" type="button" disabled>
+                  <span aria-hidden="true">📝</span> Télécharger en Word
+                </button>
+                <button class="export-button" id="copyCourseSummary" type="button" disabled>
+                  <span aria-hidden="true">📋</span> Copier le résumé
+                </button>
+                <span class="export-hint" id="exportHint">Génère d'abord un cours pour activer les exports.</span>
               </div>
             </article>
 
@@ -482,13 +846,20 @@
             <article class="pricing-panel" id="pricingPanel">
               <p class="eyebrow">Premium</p>
               <h2>Révisions illimitées</h2>
-              <p>Débloque les corrections IA, les stats détaillées et le mode examen complet.</p>
-              <div class="price-row">
-                <strong>4,99 $</strong>
-                <span>par mois</span>
-              </div>
-              <button class="primary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
-              <button class="secondary-button" id="proPlan" type="button">Voir Pro à 9,99 $</button>
+              <p>Découvre les avantages premium et choisis l'offre qui te correspond.</p>
+
+              <ul class="premium-benefits" aria-label="Bénéfices premium">
+                <li>✓ Résumés intelligents illimités</li>
+                <li>✓ Sujets à traiter illimités (5 niveaux)</li>
+                <li>✓ Correction IA détaillée fond + forme</li>
+                <li>✓ Progression intelligente et adaptative</li>
+                <li>✓ Téléchargement PDF / Word</li>
+                <li>✓ Historique complet des copies</li>
+                <li>✓ Coach pédagogique et conseils IA</li>
+              </ul>
+
+              <button class="primary-button" id="openPaywallBtn" type="button">Voir les offres et payer</button>
+              <button class="secondary-button" id="startTrial" type="button">Essai gratuit 7 jours</button>
             </article>
           </div>
         </section>
@@ -496,6 +867,100 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="paywall-modal is-hidden" id="paywallModal" role="dialog" aria-modal="true" aria-labelledby="paywallTitle">
+      <div class="paywall-backdrop" data-paywall-close></div>
+      <div class="paywall-dialog" role="document">
+        <button class="paywall-close" type="button" aria-label="Fermer" data-paywall-close>×</button>
+
+        <header class="paywall-header">
+          <p class="eyebrow">Choisis ton offre MindPrep</p>
+          <h2 id="paywallTitle">Débloque toute la puissance de l'IA</h2>
+          <p class="paywall-sub">Tout ce dont tu as besoin pour réviser plus vite et mieux.</p>
+        </header>
+
+        <ul class="premium-benefits paywall-benefits" aria-label="Bénéfices premium">
+          <li>✓ Résumés intelligents illimités</li>
+          <li>✓ Téléchargement PDF / Word</li>
+          <li>✓ Quiz automatiques générés par l'IA</li>
+          <li>✓ Historique des cours sauvegardé</li>
+          <li>✓ Révision accélérée et plan personnalisé</li>
+          <li>✓ Assistance IA avancée</li>
+          <li>✓ Correction intelligente des copies</li>
+        </ul>
+
+        <div class="paywall-tabs" role="tablist" aria-label="Plans disponibles">
+          <button class="paywall-tab active" type="button" role="tab" data-plan="free">Gratuit</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="student">Étudiant Premium</button>
+          <button class="paywall-tab" type="button" role="tab" data-plan="teacher">Professeur Premium</button>
+        </div>
+
+        <div class="paywall-cards">
+          <article class="paywall-card active" data-plan-card="free">
+            <h3>Gratuit</h3>
+            <div class="paywall-price"><strong>0 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Résumé limité (1 cours par jour)</li>
+              <li>3 sujets à traiter par cours</li>
+              <li>Correction sommaire (note seule)</li>
+              <li>Quiz courts non personnalisés</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="free">Continuer en gratuit</button>
+          </article>
+
+          <article class="paywall-card" data-plan-card="student">
+            <h3>Étudiant Premium <span class="paywall-badge">Populaire</span></h3>
+            <div class="paywall-price"><strong>2 500 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Sujets à traiter illimités (5 niveaux)</li>
+              <li>Correction IA détaillée fond + forme</li>
+              <li>Analyse avancée (Compréhension / Structure / Argumentation / Clarté)</li>
+              <li>Progression IA &amp; adaptation du niveau</li>
+              <li>Historique complet des copies</li>
+              <li>Téléchargement PDF / Word</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="student">Choisir Étudiant Premium</button>
+          </article>
+
+          <article class="paywall-card" data-plan-card="teacher">
+            <h3>Professeur Premium</h3>
+            <div class="paywall-price"><strong>7 500 FCFA</strong><span>/ mois</span></div>
+            <ul>
+              <li>Correction de copies illimitée</li>
+              <li>Analyse pédagogique détaillée</li>
+              <li>Statistiques élèves</li>
+              <li>Génération d'exercices</li>
+              <li>Tous les avantages Étudiant Premium</li>
+            </ul>
+            <button class="primary-button" type="button" data-select-plan="teacher">Choisir Professeur Premium</button>
+          </article>
+        </div>
+
+        <section class="paywall-payment is-hidden" id="paywallPayment" aria-labelledby="paywallPaymentTitle">
+          <h3 id="paywallPaymentTitle">Choisis ton mode de paiement</h3>
+          <p class="paywall-sub" id="paywallPaymentSub">Aucune clé API n'est connectée pour le moment. Les boutons ci-dessous sont des points d'intégration prêts à brancher.</p>
+          <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement">
+            <button class="payment-method" type="button" data-payment="wave"><span aria-hidden="true">🌊</span> Wave</button>
+            <button class="payment-method" type="button" data-payment="orange-money"><span aria-hidden="true">🟠</span> Orange Money</button>
+            <button class="payment-method" type="button" data-payment="free-money"><span aria-hidden="true">💚</span> Free Money</button>
+            <button class="payment-method" type="button" data-payment="stripe"><span aria-hidden="true">💳</span> Stripe</button>
+            <button class="payment-method" type="button" data-payment="paypal"><span aria-hidden="true">🅿️</span> PayPal</button>
+          </div>
+          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API ne sont pas configurées côté serveur.</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="confirm-modal is-hidden" id="paymentSuccessModal" role="dialog" aria-modal="true" aria-labelledby="paymentSuccessTitle">
+      <div class="paywall-backdrop" data-success-close></div>
+      <div class="confirm-dialog" role="document">
+        <div class="confirm-emoji" aria-hidden="true">🎉</div>
+        <h2 id="paymentSuccessTitle">Félicitations !</h2>
+        <p id="paymentSuccessMessage">Votre abonnement Premium est actif pour 30 jours.</p>
+        <ul class="confirm-features" id="paymentSuccessFeatures"></ul>
+        <button class="primary-button" type="button" id="paymentSuccessStart">Commencer</button>
+      </div>
+    </div>
 
     <!-- Supabase project config (URL et cle anon) -->
     <script src="supabase-config.js"></script>

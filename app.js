@@ -982,6 +982,9 @@ function showApp(user) {
     appShell.classList.remove("is-hidden");
     appShell.removeAttribute("hidden");
   }
+  if (typeof document !== "undefined" && document.body) {
+    document.body.classList.add("cockpit-active");
+  }
 
   // Bannière invité (affichée uniquement si on est en mode invité)
   renderGuestBanner();
@@ -1285,9 +1288,18 @@ function setView(viewName, options = {}) {
   const sidebar = document.querySelector(".sidebar");
   if (sidebar) sidebar.classList.remove("is-open");
 
-  // Scroll en haut pour cohérence visuelle
+  // Scroll en haut pour cohérence visuelle :
+  // dans le mode cockpit la zone centrale a son propre scroll, sinon
+  // on retombe sur le scroll de la fenêtre.
   if (typeof window !== "undefined") {
-    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (_) {}
+    try {
+      const grid = document.querySelector(".workspace-grid");
+      if (grid && grid.scrollTop > 0) {
+        grid.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (_) {}
   }
 }
 
@@ -2031,6 +2043,9 @@ document.querySelectorAll("[data-landing-enter]").forEach((el) => {
       if (appShell) {
         appShell.classList.remove("is-hidden");
         appShell.removeAttribute("hidden");
+      }
+      if (typeof document !== "undefined" && document.body) {
+        document.body.classList.add("cockpit-active");
       }
     }
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });

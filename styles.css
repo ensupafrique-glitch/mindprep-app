@@ -5621,3 +5621,269 @@ body > .subscription-status {
   .landing-mockup-side { padding: 12px 8px; font-size: 0.72rem; }
   .landing-hero-trust { gap: 14px; font-size: 0.84rem; }
 }
+
+/* ============================================================
+   Cockpit layer — refonte UX panoramique (3 zones fixes)
+   ============================================================
+   Objectif :
+   - Sidebar gauche fixe (toujours visible)
+   - Sidebar droite fixe / rail IA (toujours visible en desktop)
+   - Zone centrale scrollable indépendamment (fini les longues
+     pages verticales type livre)
+   - Topbar non-stickee mais zone de contenu modulaire
+   ============================================================ */
+@media (min-width: 1081px) {
+  body.cockpit-active,
+  body:has(#appShell:not([hidden])) {
+    overflow: hidden;
+  }
+
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    position: relative;
+    top: auto;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    padding: 18px 24px 0;
+  }
+
+  .topbar {
+    margin-bottom: 14px;
+  }
+
+  .workspace-grid {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 28px;
+    align-items: start;
+  }
+
+  .workspace-main {
+    min-height: 0;
+  }
+
+  .workspace-rail {
+    position: sticky;
+    top: 0;
+    max-height: calc(100vh - 80px);
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+
+  /* Scrollbar discrètes, esprit cockpit */
+  .sidebar::-webkit-scrollbar,
+  .workspace-grid::-webkit-scrollbar,
+  .workspace-rail::-webkit-scrollbar {
+    width: 8px;
+  }
+  .sidebar::-webkit-scrollbar-thumb,
+  .workspace-grid::-webkit-scrollbar-thumb,
+  .workspace-rail::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.2);
+    border-radius: 8px;
+  }
+  .sidebar::-webkit-scrollbar-thumb:hover,
+  .workspace-grid::-webkit-scrollbar-thumb:hover,
+  .workspace-rail::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.35);
+  }
+}
+
+/* Le legacy-dashboard (longue page diagnostique) ne doit pas être ouvert
+   par défaut : il reste accessible en repliable mais ne pollue plus la
+   vue cockpit. */
+.legacy-dashboard {
+  margin-top: 4px;
+  border: 1px dashed var(--line-soft, #e2e8f0);
+  border-radius: 12px;
+  background: rgba(241, 245, 249, 0.4);
+  padding: 0 14px;
+}
+.legacy-dashboard > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legacy-dashboard > summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform 0.2s ease;
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+.legacy-dashboard[open] > summary::before {
+  transform: rotate(90deg);
+}
+.legacy-dashboard > summary::-webkit-details-marker {
+  display: none;
+}
+.legacy-dashboard[open] > .dashboard-grid {
+  padding: 12px 0 16px;
+}
+
+/* Vues internes : limiter le défilement type "livre" — chaque vue dispose
+   d'un cadre cockpit, le scroll global est géré par .workspace-grid. */
+.workspace-main .view {
+  padding: 0;
+}
+
+.workspace-main .view.active {
+  display: block;
+  animation: cockpit-fade-in 0.18s ease;
+}
+
+@keyframes cockpit-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom dashboard : empêcher la pile verticale écrasante. */
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-bottom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Densifier la grille de stats sur grands écrans pour tenir en hauteur
+   sans scroll initial (effet panoramique). */
+@media (min-width: 1281px) {
+  .stat-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .stat-card {
+    padding: 14px 16px;
+  }
+  .course-cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+}
+
+/* --- Notifications widget (rail droit) --- */
+.rail-notifs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rail-pill--accent {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-weight: 700;
+}
+
+.rail-notifs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rail-notif {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft, #e2e8f0);
+  border-radius: 10px;
+  background: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rail-notif:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.rail-notif-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+.rail-notif-dot--ok    { background: #10b981; }
+.rail-notif-dot--blue  { background: #3b82f6; }
+.rail-notif-dot--violet{ background: #8b5cf6; }
+
+.rail-notif-body {
+  min-width: 0;
+}
+.rail-notif-body strong {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-strong, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-notif-body span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-notif-time {
+  align-self: center;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* --- Responsive : tablette/mobile garde le layout linéaire d'origine
+   (le rail repasse sous la zone centrale, la sidebar devient drawer).
+   Les règles existantes <=1080px et <=860px restent en charge. --- */
+@media (max-width: 1080px) {
+  .workspace {
+    height: auto;
+    overflow: visible;
+  }
+  .workspace-grid {
+    overflow: visible;
+  }
+  .workspace-rail {
+    max-height: none;
+    overflow: visible;
+    position: static;
+  }
+}

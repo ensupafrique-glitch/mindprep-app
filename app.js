@@ -1128,12 +1128,7 @@ async function updateSubscriptionStatus() {
     const remainingReports = Math.max(0, tierData.limits.reportsPerMonth - usage);
 
     statusContainer.innerHTML = `
-      <div class="subscription-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; ${
-        tier === 'free' ? 'background: #f0f0f0; color: #666;' :
-        tier === 'basic' ? 'background: #e3f2fd; color: #1976d2;' :
-        tier === 'premium' ? 'background: #fff3e0; color: #f57c00;' :
-        'background: #f3e5f5; color: #7b1fa2;'
-      }">
+      <div class="subscription-badge subscription-badge--${tier}">
         <span class="tier-icon">${
           tier === 'free' ? '🆓' :
           tier === 'basic' ? '⭐' :
@@ -1141,7 +1136,7 @@ async function updateSubscriptionStatus() {
           '👑'
         }</span>
         <span class="tier-name">${tierData.name}</span>
-        <span class="usage-info" style="font-weight: normal;">
+        <span class="usage-info">
           ${tier === 'free' ?
             `${remainingReports} rapports restants` :
             totalCredits > 0 ?
@@ -1149,7 +1144,7 @@ async function updateSubscriptionStatus() {
               'Rapports illimités'
           }
         </span>
-        ${tier === 'free' ? '<span class="upgrade-hint" style="font-size: 12px; opacity: 0.8;">↗️ Upgrade</span>' : ''}
+        ${tier === 'free' ? '<span class="upgrade-hint">↗️ Upgrade</span>' : ''}
       </div>
     `;
 
@@ -1177,7 +1172,7 @@ async function updateSubscriptionStatus() {
 function createSubscriptionStatusContainer() {
   const container = document.createElement('div');
   container.id = 'subscriptionStatus';
-  container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 100;';
+  container.className = 'subscription-status';
 
   document.body.appendChild(container);
   return container;

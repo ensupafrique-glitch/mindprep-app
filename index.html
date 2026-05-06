@@ -10,89 +10,92 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <section class="auth-screen" id="authScreen" aria-labelledby="authTitle">
-      <div class="auth-brand">
-        <div class="brand-mark" aria-hidden="true">M</div>
-        <div>
-          <strong>MindPrep</strong>
-          <span>Preparation intelligente aux examens par IA</span>
-          <span class="brand-tagline">Prépare aux examens et concours</span>
-        </div>
-      </div>
+    <!--
+      Modale d'inscription / connexion (Delayed Auth).
+      Cachée par défaut : ouverte uniquement quand l'utilisateur déclenche une
+      action premium (export PDF/Word, paywall, sauvegarde, etc.) ou clique
+      explicitement sur "Créer un compte" depuis la bannière invité.
+      L'utilisateur peut découvrir l'app sans jamais voir cette modale.
+    -->
+    <section class="signup-modal is-hidden" id="authScreen" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
+      <div class="signup-modal-backdrop" data-signup-close></div>
+      <div class="signup-modal-dialog" role="document">
+        <button type="button" class="signup-modal-close" id="authClose" aria-label="Fermer">×</button>
 
-      <div class="auth-card">
-        <div class="auth-copy">
-          <p class="eyebrow">Bienvenue</p>
-          <h1 id="authTitle">Connecte-toi pour continuer ta preparation.</h1>
-          <p>
-            Retrouve ton diagnostic, tes mini-tests, ton streak et ton plan
-            d'action personnalise.
-          </p>
+        <div class="signup-modal-header">
+          <div class="signup-modal-emoji" aria-hidden="true">✨</div>
+          <h2 id="authTitle">Sauvegarde ton travail ✨</h2>
+          <p class="signup-modal-lead">Crée un compte gratuitement pour&nbsp;:</p>
+          <ul class="signup-modal-benefits">
+            <li>télécharger tes rapports&nbsp;;</li>
+            <li>sauvegarder ta progression&nbsp;;</li>
+            <li>retrouver tes cours à tout moment.</li>
+          </ul>
           <div class="auth-notice" id="authNotice" role="status"></div>
         </div>
 
-        <div class="auth-tabs" role="tablist" aria-label="Mode d'authentification">
-          <button class="auth-tab active" id="loginTab" type="button">Connexion</button>
-          <button class="auth-tab" id="registerTab" type="button">Inscription</button>
-        </div>
-
-        <form class="auth-form" id="authForm">
-          <label class="field is-hidden" id="nameField">
-            <span>Nom</span>
-            <input id="authName" name="name" type="text" autocomplete="name" placeholder="Sarah" />
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input id="authEmail" name="email" type="email" autocomplete="email" placeholder="sarah@email.com" required />
-          </label>
-          <label class="field">
-            <span>Mot de passe</span>
-            <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="6" placeholder="6 caracteres minimum" required />
-          </label>
-          <label class="field is-hidden" id="levelField">
-            <span>Niveau</span>
-            <select id="authLevel" name="level">
-              <optgroup label="College">
-                <option value="Sixieme">Sixième</option>
-                <option value="Cinquieme">Cinquième</option>
-                <option value="Quatrieme">Quatrième</option>
-                <option value="Troisieme">Troisième</option>
-              </optgroup>
-              <optgroup label="Lycee">
-                <option value="Seconde">Seconde</option>
-                <option value="Premiere generale">Première générale</option>
-                <option value="Premiere L">Première L</option>
-                <option value="Premiere technologique">Première technologique</option>
-                <option value="Terminale generale" selected>Terminale générale</option>
-                <option value="Terminale L">Terminale L</option>
-                <option value="Terminale technologique">Terminale technologique</option>
-              </optgroup>
-              <optgroup label="Concours">
-                <option value="Concours ENA">Concours ENA</option>
-                <option value="Classes prepa">Classes prépa</option>
-              </optgroup>
-              <optgroup label="Autre">
-                <option value="Etudiant libre">Etudiant libre</option>
-              </optgroup>
-            </select>
-          </label>
-
-          <button class="primary-button" id="authSubmit" type="submit">Se connecter</button>
-          <button class="secondary-button" id="googleAuth" type="button">Continuer avec Google</button>
-
-          <div class="auth-divider" aria-hidden="true"><span>ou</span></div>
-
-          <button class="guest-button" id="guestAccess" type="button">
-            ✨ Essayer MindPrep gratuitement, sans compte
+        <div class="signup-modal-actions">
+          <button class="primary-button signup-google" id="googleAuth" type="button">
+            <span aria-hidden="true">🔐</span> Continuer avec Google
           </button>
-          <p class="guest-hint">
-            Découvre MindPrep sans inscription. Tu pourras créer un compte plus tard pour sauvegarder ta progression.
+
+          <div class="auth-tabs" role="tablist" aria-label="Mode d'authentification">
+            <button class="auth-tab active" id="registerTab" type="button">Créer un compte</button>
+            <button class="auth-tab" id="loginTab" type="button">Se connecter</button>
+          </div>
+
+          <form class="auth-form" id="authForm">
+            <label class="field" id="nameField">
+              <span>Prénom</span>
+              <input id="authName" name="name" type="text" autocomplete="name" placeholder="Sarah" />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input id="authEmail" name="email" type="email" autocomplete="email" placeholder="sarah@email.com" required />
+            </label>
+            <label class="field">
+              <span>Mot de passe</span>
+              <input id="authPassword" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="6 caractères minimum" required />
+            </label>
+            <label class="field" id="levelField">
+              <span>Niveau</span>
+              <select id="authLevel" name="level">
+                <optgroup label="College">
+                  <option value="Sixieme">Sixième</option>
+                  <option value="Cinquieme">Cinquième</option>
+                  <option value="Quatrieme">Quatrième</option>
+                  <option value="Troisieme">Troisième</option>
+                </optgroup>
+                <optgroup label="Lycee">
+                  <option value="Seconde">Seconde</option>
+                  <option value="Premiere generale">Première générale</option>
+                  <option value="Premiere L">Première L</option>
+                  <option value="Premiere technologique">Première technologique</option>
+                  <option value="Terminale generale" selected>Terminale générale</option>
+                  <option value="Terminale L">Terminale L</option>
+                  <option value="Terminale technologique">Terminale technologique</option>
+                </optgroup>
+                <optgroup label="Concours">
+                  <option value="Concours ENA">Concours ENA</option>
+                  <option value="Classes prepa">Classes prépa</option>
+                </optgroup>
+                <optgroup label="Autre">
+                  <option value="Etudiant libre">Etudiant libre</option>
+                </optgroup>
+              </select>
+            </label>
+
+            <button class="primary-button" id="authSubmit" type="submit">Créer mon compte</button>
+          </form>
+
+          <p class="signup-modal-hint">
+            Tu peux continuer en mode invité — ferme simplement cette fenêtre. Tes essais en cours ne sont pas perdus.
           </p>
-        </form>
+        </div>
       </div>
     </section>
 
-    <div class="app-shell is-hidden" id="appShell">
+    <div class="app-shell" id="appShell">
       <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Ouvrir la navigation">
         <span aria-hidden="true">☰</span>
       </button>

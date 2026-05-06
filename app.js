@@ -476,8 +476,11 @@ const exportHint = document.querySelector("#exportHint");
 let lastCourseModel = null;
 let lastCourseSubject = null;
 
-let authMode = "login";
-const supabaseClient = createSupabaseClient();
+let authMode = "register";
+// Supabase Auth est désormais optionnel et chargé en arrière-plan UNIQUEMENT
+// après le premier rendu de l'app (cf. initializeAuth). On ne l'initialise
+// jamais dans le flux de bootstrap synchrone pour éviter tout freeze à l'ouverture.
+let supabaseClient = null;
 let selectedCopyFile = null;
 
 /**
@@ -680,6 +683,9 @@ async function exportReportToPDF() {
     showToast('Aucun rapport disponible pour l\'export');
     return;
   }
+  if (requireAccount("Crée un compte gratuit pour exporter ta correction en PDF.")) {
+    return;
+  }
 
   try {
     showToast('Génération du PDF en cours...');
@@ -715,6 +721,9 @@ async function exportReportToPDF() {
 async function exportReportToDOCX() {
   if (!lastGeneratedReport) {
     showToast('Aucun rapport disponible pour l\'export');
+    return;
+  }
+  if (requireAccount("Crée un compte gratuit pour exporter ta correction en Word.")) {
     return;
   }
 
@@ -834,6 +843,23 @@ function createSupabaseClient() {
   }
 }
 
+/**
+ * Initialise le client Supabase à la demande (lazy).
+ * Aucune initialisation au chargement de la page : ce client n'est
+ * construit que lorsqu'on en a vraiment besoin (popup auth, paywall...),
+ * pour garantir un premier rendu de l'app immédiat et sans freeze.
+ */
+function ensureSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  try {
+    supabaseClient = createSupabaseClient();
+  } catch (error) {
+    console.error("Erreur lors de l'init Supabase (lazy):", error);
+    supabaseClient = null;
+  }
+  return supabaseClient;
+}
+
 function showAuthNotice(message) {
   authNotice.textContent = message;
   authNotice.classList.add("show");
@@ -927,8 +953,9 @@ function applyUser(user) {
 
 function showApp(user) {
   applyUser(user);
-  authScreen.classList.add("is-hidden");
-  appShell.classList.remove("is-hidden");
+  // L'app shell est toujours visible — la modale d'inscription, si elle
+  // est ouverte, vient se superposer par-dessus sans la masquer.
+  if (appShell) appShell.classList.remove("is-hidden");
 
   // Bannière invité (affichée uniquement si on est en mode invité)
   renderGuestBanner();
@@ -942,7 +969,7 @@ function showApp(user) {
  * Réutilise le pipeline showApp/applyUser pour préserver toutes les
  * fonctionnalités existantes (dashboard, training, paywall, exposé...).
  */
-function enterGuestMode({ persist = true, silent = false } = {}) {
+function enterGuestMode({ persist = true, silent = true } = {}) {
   isGuestMode = true;
   if (persist) persistGuestMode(true);
 
@@ -962,7 +989,7 @@ function enterGuestMode({ persist = true, silent = false } = {}) {
   });
 
   if (!silent) {
-    showToast("Bienvenue ! Tu es en mode invité. Crée un compte plus tard pour sauvegarder.");
+    showToast("Tu testes MindPrep en mode invité. Crée un compte plus tard pour sauvegarder.");
   }
 }
 
@@ -991,10 +1018,27 @@ function requireAccount(message) {
   return true;
 }
 
+function openSignupModal({ message, mode = "register" } = {}) {
+  if (!authScreen) return;
+  setAuthMode(mode);
+  authScreen.classList.remove("is-hidden");
+  authScreen.removeAttribute("hidden");
+  if (message) showAuthNotice(message);
+  // Lazy-initialise Supabase à l'ouverture de la modale (premier vrai besoin).
+  ensureSupabaseClient();
+}
+
+function closeSignupModal() {
+  if (!authScreen) return;
+  authScreen.classList.add("is-hidden");
+  authScreen.setAttribute("hidden", "");
+  hideAuthNotice();
+}
+
 function promptAccountCreation(message) {
-  const text = message || "Créez un compte pour sauvegarder votre progression.";
-  showToast(text);
-  // Met en évidence la bannière (qui contient le bouton "Créer un compte")
+  const text = message || "Crée un compte gratuit pour sauvegarder et exporter ton travail.";
+  openSignupModal({ message: text, mode: "register" });
+  // Met en évidence la bannière (si visible) pour le rappel ergonomique
   const banner = document.querySelector("#guestBanner");
   if (banner) {
     banner.style.transition = "transform 0.2s ease";
@@ -1019,7 +1063,7 @@ function renderGuestBanner() {
     <span class="guest-banner-icon" aria-hidden="true">✨</span>
     <span class="guest-banner-text">
       <strong>Mode invité actif.</strong>
-      Tu peux explorer MindPrep sans compte. Crée un compte pour sauvegarder ta progression.
+      Créez un compte pour sauvegarder et exporter vos résultats.
     </span>
     <span class="guest-banner-actions">
       <button type="button" class="guest-banner-cta" id="guestBannerSignup">Créer un compte</button>
@@ -1032,10 +1076,11 @@ function renderGuestBanner() {
   main.insertBefore(banner, main.firstChild);
 
   banner.querySelector("#guestBannerSignup")?.addEventListener("click", () => {
-    // Repasse à l'écran d'auth pour l'inscription, sans casser le mode invité
-    setAuthMode("register");
-    showAuth({ keepGuest: true });
-    showAuthNotice("Crée ton compte pour sauvegarder ta progression. Tu peux revenir au mode invité à tout moment.");
+    // Ouvre la popup d'inscription par-dessus l'app, sans interrompre la session invité.
+    openSignupModal({
+      mode: "register",
+      message: "Crée ton compte pour sauvegarder ta progression. Tu peux fermer cette fenêtre à tout moment.",
+    });
   });
 
   banner.querySelector("#guestBannerDismiss")?.addEventListener("click", () => {
@@ -1120,26 +1165,25 @@ function createSubscriptionStatusContainer() {
 }
 
 function showAuth(options = {}) {
-  // Si on est en mode invité, ne pas forcer l'affichage de l'auth
-  // sauf si l'appelant le demande explicitement (ex: clic "Créer un compte"
-  // depuis la bannière, ou logout volontaire).
+  // Auth différée : on n'affiche jamais d'écran plein page bloquant.
+  // Un éventuel besoin d'auth (logout volontaire, clic explicite) ouvre
+  // la modale "Sauvegarde ton travail ✨" par-dessus l'app.
   if (isGuestMode && !options.force && !options.keepGuest) {
     return;
   }
-  appShell.classList.add("is-hidden");
-  authScreen.classList.remove("is-hidden");
+  openSignupModal({ mode: authMode || "register" });
 }
 
 function setAuthMode(mode) {
   authMode = mode;
   const isRegister = mode === "register";
 
-  loginTab.classList.toggle("active", !isRegister);
-  registerTab.classList.toggle("active", isRegister);
-  nameField.classList.toggle("is-hidden", !isRegister);
-  levelField.classList.toggle("is-hidden", !isRegister);
-  authSubmit.textContent = isRegister ? "Créer mon compte" : "Se connecter";
-  authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+  if (loginTab) loginTab.classList.toggle("active", !isRegister);
+  if (registerTab) registerTab.classList.toggle("active", isRegister);
+  if (nameField) nameField.classList.toggle("is-hidden", !isRegister);
+  if (levelField) levelField.classList.toggle("is-hidden", !isRegister);
+  if (authSubmit) authSubmit.textContent = isRegister ? "Créer mon compte" : "Se connecter";
+  if (authPassword) authPassword.autocomplete = isRegister ? "new-password" : "current-password";
 }
 
 function getSupabaseSetupError() {
@@ -1798,6 +1842,7 @@ async function handleAuthSubmit() {
     return;
   }
 
+  ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1879,6 +1924,7 @@ authForm.addEventListener("submit", (event) => {
 googleAuth.addEventListener("click", async () => {
   hideAuthNotice();
 
+  ensureSupabaseClient();
   if (!supabaseClient) {
     showAuthNotice(getSupabaseSetupError());
     return;
@@ -1912,6 +1958,7 @@ googleAuth.addEventListener("click", async () => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
+    if (!isGuestMode) ensureSupabaseClient();
     if (supabaseClient && !isGuestMode) {
       await withAuthTimeout(supabaseClient.auth.signOut(), "de déconnexion");
     }
@@ -1919,20 +1966,39 @@ logoutBtn.addEventListener("click", async () => {
     console.error("Erreur logout Supabase:", error);
   } finally {
     const wasGuest = isGuestMode;
-    if (wasGuest) exitGuestMode();
-    authPassword.value = "";
-    setAuthMode("login");
-    showAuth({ force: true });
-    showToast(wasGuest ? "Mode invité quitté." : "Session fermée.");
+    if (!wasGuest) {
+      // Logout d'un compte réel : on retombe en mode invité, pas sur un écran d'auth.
+      enterGuestMode({ silent: true });
+    }
+    if (authPassword) authPassword.value = "";
+    setAuthMode("register");
+    showToast(wasGuest ? "Tu peux fermer la modale pour rester en mode invité." : "Session fermée. Tu es repassé en mode invité.");
+    if (wasGuest) {
+      openSignupModal({ mode: "register" });
+    }
   }
 });
 
+// Le bouton "Essayer sans compte" a disparu : l'app entre désormais
+// directement en mode invité au chargement (cf. initializeAuth).
 if (guestAccess) {
   guestAccess.addEventListener("click", () => {
     hideAuthNotice();
-    enterGuestMode();
+    closeSignupModal();
+    if (!isGuestMode) enterGuestMode({ silent: true });
   });
 }
+
+// Fermeture de la popup d'inscription (croix, backdrop, touche Échap).
+document.querySelector("#authClose")?.addEventListener("click", () => closeSignupModal());
+document.querySelectorAll("[data-signup-close]").forEach((el) => {
+  el.addEventListener("click", () => closeSignupModal());
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && authScreen && !authScreen.classList.contains("is-hidden")) {
+    closeSignupModal();
+  }
+});
 
 document.querySelector("#diagAnswers").addEventListener("click", (event) => {
   const button = event.target.closest("[data-diag-answer]");
@@ -2342,6 +2408,9 @@ if (downloadCoursePdfBtn) {
       showToast("Génère d'abord un cours pour exporter en PDF.");
       return;
     }
+    if (requireAccount("Crée un compte gratuit pour télécharger ce cours en PDF et retrouver tes exports plus tard.")) {
+      return;
+    }
     const html = buildCoursePrintableHtml(lastCourseModel, lastCourseSubject);
     const win = window.open("", "_blank");
     if (!win) {
@@ -2359,6 +2428,9 @@ if (downloadCourseDocBtn) {
   downloadCourseDocBtn.addEventListener("click", () => {
     if (!lastCourseModel) {
       showToast("Génère d'abord un cours pour exporter en Word.");
+      return;
+    }
+    if (requireAccount("Crée un compte gratuit pour télécharger ce cours en Word.")) {
       return;
     }
     const blob = buildCourseDocBlob(lastCourseModel, lastCourseSubject);
@@ -2697,7 +2769,7 @@ document.querySelector("#examMode").addEventListener("click", () => {
 renderTopics();
 renderDiagnostic();
 renderPractice();
-setAuthMode("login");
+setAuthMode("register");
 
 let lastAuthUserId = null;
 
@@ -2711,73 +2783,62 @@ function applyAuthSession(user) {
     lastAuthUserId = user.id;
     // Une vraie session prend le pas sur le mode invité.
     if (isGuestMode) exitGuestMode();
+    closeSignupModal();
     showApp(mapSupabaseUser(user));
   } else {
     lastAuthUserId = null;
-    // En mode invité, ne pas forcer le retour à l'écran d'auth :
-    // l'utilisateur a explicitement choisi de continuer sans compte.
-    if (isGuestMode) return;
-    showAuth();
+    // Pas de session : on reste en mode invité — jamais d'écran de login plein page.
+    if (!isGuestMode) {
+      enterGuestMode({ silent: true });
+    }
   }
 }
 
-async function initializeAuth() {
-  // Si l'utilisateur a déjà choisi le mode invité dans une session précédente,
-  // on entre directement dans l'app sans appel Supabase bloquant.
-  if (readGuestModeFromStorage()) {
-    enterGuestMode({ persist: false, silent: true });
-    // On tente quand même getSession en arrière-plan : si l'utilisateur
-    // s'est entre-temps connecté ailleurs, on bascule sur sa session réelle.
-    if (supabaseClient) {
-      try {
-        const { data } = await withAuthTimeout(
-          supabaseClient.auth.getSession(),
-          "de session"
-        );
+function initializeAuth() {
+  // OBJECTIF : zéro friction. L'utilisateur entre directement dans l'app
+  // en mode invité au chargement. Aucun appel Supabase n'est effectué
+  // dans ce chemin synchrone — Supabase est branché en arrière-plan,
+  // après le premier rendu, et toute défaillance est silencieuse.
+  enterGuestMode({ persist: true, silent: true });
+
+  // Branchement Supabase non bloquant : on attend que le navigateur soit
+  // au repos (premier paint terminé) avant d'essayer de récupérer une
+  // éventuelle session existante. Si quoi que ce soit échoue, l'app
+  // continue de fonctionner en mode invité.
+  const scheduleBackgroundAuth = () => {
+    try {
+      ensureSupabaseClient();
+    } catch (e) {
+      return;
+    }
+    if (!supabaseClient) return;
+
+    Promise.resolve()
+      .then(() =>
+        withAuthTimeout(supabaseClient.auth.getSession(), "de session")
+      )
+      .then(({ data }) => {
         if (data?.session?.user) {
           applyAuthSession(data.session.user);
         }
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-          applyAuthSession(session?.user || null);
-        });
-      } catch (error) {
-        // Silencieux : on est déjà en mode invité, l'app est utilisable.
+      })
+      .catch((error) => {
         console.warn("Supabase indisponible, mode invité conservé.", error);
-      }
+      });
+
+    try {
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        applyAuthSession(session?.user || null);
+      });
+    } catch (error) {
+      console.warn("onAuthStateChange indisponible:", error);
     }
-    return;
-  }
+  };
 
-  if (!supabaseClient) {
-    showAuth();
-    showAuthNotice(getSupabaseSetupError());
-    return;
-  }
-
-  try {
-    const { data, error } = await withAuthTimeout(
-      supabaseClient.auth.getSession(),
-      "de session"
-    );
-
-    if (error) {
-      showAuth();
-      showAuthNotice(friendlyAuthErrorMessage(error.message, "login"));
-    } else {
-      applyAuthSession(data?.session?.user || null);
-    }
-  } catch (error) {
-    console.error("Erreur getSession Supabase:", error);
-    showAuth();
-    showAuthNotice(friendlyAuthErrorMessage(error?.message, "login"));
-  }
-
-  try {
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-      applyAuthSession(session?.user || null);
-    });
-  } catch (error) {
-    console.error("Erreur onAuthStateChange Supabase:", error);
+  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(scheduleBackgroundAuth, { timeout: 2500 });
+  } else {
+    window.setTimeout(scheduleBackgroundAuth, 1200);
   }
 }
 

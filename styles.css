@@ -4545,3 +4545,121 @@ body {
   .preso-tabs { overflow-x: auto; flex-wrap: nowrap; }
   .preso-tab { white-space: nowrap; }
 }
+
+/* ==========================================================================
+ * Signup modal — popup d'inscription "Sauvegarde ton travail ✨"
+ * Affichée seulement quand l'utilisateur déclenche une action premium
+ * (export PDF, achat, sauvegarde…). Non bloquante : ferme avec ×, backdrop,
+ * Échap, ou bouton de fermeture, et l'utilisateur reste en mode invité.
+ * ========================================================================== */
+
+.signup-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.signup-modal.is-hidden { display: none; }
+
+.signup-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.signup-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  animation: signup-modal-in 0.18s ease-out;
+}
+
+@keyframes signup-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.signup-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+}
+.signup-modal-close:hover { background: #f1f5f9; color: var(--ink); }
+
+.signup-modal-header { text-align: center; }
+.signup-modal-emoji { font-size: 2rem; line-height: 1; margin-bottom: 8px; }
+.signup-modal-header h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.4rem, 3vw, 1.7rem);
+  line-height: 1.15;
+}
+.signup-modal-lead { margin: 6px 0 6px; color: var(--muted); }
+.signup-modal-benefits {
+  margin: 0 auto 14px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  display: inline-block;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.signup-modal-benefits li {
+  position: relative;
+  padding-left: 20px;
+  margin: 4px 0;
+}
+.signup-modal-benefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.signup-modal-actions { margin-top: 14px; }
+.signup-modal-actions .auth-tabs { margin: 18px 0 14px; }
+.signup-modal-actions .auth-form { gap: 10px; }
+.signup-google {
+  width: 100%;
+  margin-bottom: 4px;
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.signup-google:hover { background: #f8fafc; }
+
+.signup-modal-hint {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (max-width: 480px) {
+  .signup-modal { padding: 12px; }
+  .signup-modal-dialog { padding: 22px 18px 18px; border-radius: 14px; }
+}

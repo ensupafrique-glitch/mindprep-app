@@ -50,6 +50,20 @@ Puis ouvrir `http://localhost:3000/`.
 - Progression, streaks, points et achievements.
 - Paywall freemium, Étudiant Premium et Professeur Premium.
 - **Exposé intelligent / Présentation IA** : transforme un sujet ou un cours en présentation complète (plan, slides, mind map, graphiques recommandés, questions du jury, coaching oral en Premium). Hooks API prêts pour OpenAI, Claude et Napkin — voir [`docs/11-presentation-integrations.md`](docs/11-presentation-integrations.md).
+- Paiement par crédits (packs FCFA) compatible Wave, Orange Money et Free Money.
+- Offre établissement (écoles, universités, prépas concours) et roadmap marketplace + Coach Réussite IA.
+
+## Modèle économique en bref
+
+MindPrep vend la **réussite**, la **progression**, la **correction
+intelligente** et l'**entraînement adaptatif** — pas seulement des résumés. Voir
+[`docs/04-business-model.md`](docs/04-business-model.md) pour le détail.
+
+- **Gratuit** : 3 cours/mois, mini-tests limités, correction sommaire.
+- **Premium Étudiant** : 3 000 – 7 000 FCFA / mois — illimité, correction détaillée, coach IA.
+- **Premium Professeur** : 10 000 – 30 000 FCFA / mois — correction massive, dashboard élèves, statistiques.
+- **Crédits à l'usage** : packs 500 / 1 000 / 2 500 / 5 000 FCFA (Wave, Orange Money, Free Money).
+- **Établissement / B2B** : sur devis pour écoles, centres de formation, prépas concours.
 
 ## Roadmap & APIs recommandées
 

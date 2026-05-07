@@ -40,48 +40,57 @@ Pour ajouter une variante, éditer `QR_CONFIG.variants` dans
 
 ## Stratégie domaine (display ≠ target)
 
-Deux URLs cohabitent dans la config :
+La source de vérité est désormais centralisée dans
+[`core/site-config.js`](../core/site-config.js). `qr-config.js` consomme
+ces valeurs :
 
 ```js
-// core/qr-system/qr-config.js
-displayDomain: 'app.mindprep.ai',                                  // visuel
-targetUrl:     'https://ensupafrique-glitch.github.io/mindprep-app/', // scan réel
-useDisplayAsTarget: false,                                          // bascule
+// core/site-config.js
+SITE_CONFIG = {
+  productionUrl: 'https://app.mindprep.ai',                            // cible finale
+  fallbackUrl:   'https://ensupafrique-glitch.github.io/mindprep-app/', // repli actif
+  domainStatus:  'pending',                                            // 'pending' | 'live'
+  brandDomain:   'app.mindprep.ai',
+};
+
+// core/qr-system/qr-config.js (dérivé)
+displayDomain:      SITE_CONFIG.brandDomain,                            // visuel
+targetUrl:          SITE_CONFIG.fallbackUrl,                            // scan réel
+useDisplayAsTarget: SITE_CONFIG.domainStatus === 'live',                // bascule
 ```
 
 - Le **visuel imprimé** affiche toujours `app.mindprep.ai` — on n’expose
   jamais l’URL GitHub Pages sur le QR.
 - Le **scan réel** envoie pour l’instant vers l’hébergement courant
-  (`targetUrl`) : c’est ce qui garantit qu’un QR distribué dès aujourd’hui
+  (`fallbackUrl`) : c’est ce qui garantit qu’un QR distribué dès aujourd’hui
   fonctionne, sans dépendre d’un DNS qui n’est pas encore configuré.
 - Une fois `app.mindprep.ai` opérationnel (cf. § ci-dessous), passer
-  `useDisplayAsTarget` à `true` puis régénérer les SVG.
+  `domainStatus` à `'live'` puis régénérer les SVG.
 
-### Activer le domaine `app.mindprep.ai`
+### Activer le domaine `app.mindprep.ai` (Vercel)
 
-> Le domaine n’est pas (encore) possédé / configuré. Ces étapes sont à
-> dérouler quand il le sera.
+> Le domaine n’est pas encore connecté. Procédure complète dans
+> [`docs/14-vercel-deployment.md`](./14-vercel-deployment.md). Résumé :
 
-1. **Acheter** `mindprep.ai` (ou le sous-domaine désiré) chez un registrar.
-2. **DNS** : créer un enregistrement `CNAME` du sous-domaine
-   `app.mindprep.ai` vers l’hébergement actif :
-   - GitHub Pages : `ensupafrique-glitch.github.io`
-   - Sinon : l’hôte choisi (Netlify, Vercel, etc.).
-3. **GitHub Pages → Custom domain** : ajouter `app.mindprep.ai` dans les
-   réglages du repo, cocher *Enforce HTTPS*. Attendre la délivrance du
-   certificat (quelques minutes).
-4. **Vérifier** dans un navigateur que `https://app.mindprep.ai/` répond
-   (HTTPS valide + landing MindPrep visible).
-5. **Mettre à jour la config** :
-   ```js
-   useDisplayAsTarget: true,
+1. Importer le repo dans **Vercel** (preset *Other*, sans build command).
+2. Ajouter `app.mindprep.ai` dans **Project → Settings → Domains**.
+3. Chez le registrar : créer un `CNAME app → cname.vercel-dns.com`.
+4. Attendre la propagation DNS et le certificat HTTPS automatique de Vercel.
+5. Vérifier que `https://app.mindprep.ai/` répond et que `/qr.html` est
+   accessible.
+6. Basculer la config :
+   ```diff
+   // core/site-config.js
+   -  domainStatus: 'pending',
+   +  domainStatus: 'live',
    ```
-6. **Régénérer les QR** :
+7. Régénérer les QR :
    ```bash
    node core/qr-system/generate-assets.mjs
    ```
-7. Republier les supports imprimés (les anciens QR continuent de
-   fonctionner tant que GitHub Pages reste joignable).
+8. Republier les supports imprimés (les anciens QR pointant vers GitHub
+   Pages continuent de fonctionner tant que cet hébergement reste joignable —
+   filet de sécurité explicite).
 
 ## Analytics
 

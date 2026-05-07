@@ -92,13 +92,15 @@
 
       <div class="info">
         <strong>Domaine d’affichage vs domaine cible.</strong>
-        Par défaut, le QR encode l’URL d’hébergement courante mais affiche
-        <code>app.mindprep.ai</code> sous le visuel. Pour basculer sur
-        <code>app.mindprep.ai</code> en cible réelle (une fois le DNS configuré), modifie
-        <code>core/qr-system/qr-config.js</code> :
-        passe <code>useDisplayAsTarget</code> à <code>true</code>, puis relance
-        <code>node core/qr-system/generate-assets.mjs</code>. Voir aussi
-        <code>docs/13-qr-system.md</code>.
+        Par défaut, le QR encode l’URL d’hébergement courante (GitHub Pages,
+        en repli) mais affiche <code>app.mindprep.ai</code> sous le visuel.
+        Pour basculer sur <code>app.mindprep.ai</code> en cible réelle (une
+        fois le domaine connecté à Vercel et HTTPS validé), passer
+        <code>domainStatus</code> à <code>'live'</code> dans
+        <code>core/site-config.js</code>, puis relancer
+        <code>node core/qr-system/generate-assets.mjs</code>.
+        Voir <code>docs/13-qr-system.md</code> et
+        <code>docs/14-vercel-deployment.md</code>.
       </div>
 
       <footer>MindPrep · Studio QR · Généré côté client (aucune donnée envoyée).</footer>

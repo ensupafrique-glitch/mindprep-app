@@ -19,7 +19,20 @@ pratique ciblee sur les vrais points faibles.
 - `data/` : modele de donnees et contenu pedagogique.
 - `roadmap/` : MVP, backlog et priorites.
 - `core/qr-system/` : système QR Code premium (visuels SVG clair/sombre, landing post-scan, analytics). Voir [`docs/13-qr-system.md`](docs/13-qr-system.md). Studio interne : [`qr.html`](qr.html).
+- `core/site-config.js` : source de vérité unique pour l'URL publique (`app.mindprep.ai` cible, GitHub Pages en repli tant que le DNS n'est pas branché).
 - `assets/qr/` : QR pré-générés (étudiant, concours, professeur, marketing × clair/sombre).
+- `vercel.json` : config Vercel (headers MIME modules ESM, alias `/qr` → `qr.html`).
+- `DOMAIN_STATUS.md` : checklist de bascule du domaine `app.mindprep.ai`.
+
+## Hébergement & domaine
+
+Le domaine cible est **`https://app.mindprep.ai`**, hébergé sur **Vercel**.
+Tant que le DNS n'est pas branché, l'app reste servie par
+`https://ensupafrique-glitch.github.io/mindprep-app/` (fallback). Les QR
+codes affichent toujours `app.mindprep.ai` mais encodent l'URL de repli
+jusqu'à la bascule. Procédure complète :
+[`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md). Statut :
+[`DOMAIN_STATUS.md`](DOMAIN_STATUS.md).
 
 ## Lancer le frontend
 

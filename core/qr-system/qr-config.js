@@ -1,32 +1,29 @@
 // MindPrep — Configuration QR Code (système premium)
 //
-// Stratégie domaine :
-//  - `displayDomain`   : URL affichée sur le visuel (branding). Doit être courte
-//                        et professionnelle, ex. "app.mindprep.ai".
-//  - `targetUrl`       : URL réellement encodée dans le QR (où le scan envoie
-//                        l'utilisateur). Doit pointer vers un hébergement actif.
-//  - `useDisplayAsTarget` : si `true`, on encode `displayDomain` au lieu de
-//                        `targetUrl` (à activer UNE FOIS le DNS configuré et
-//                        la redirection HTTPS validée — voir docs/13-qr-system.md).
+// Stratégie domaine : la source de vérité unique est `core/site-config.js`.
+//  - `displayDomain`        ← `SITE_CONFIG.brandDomain` ("app.mindprep.ai")
+//  - `targetUrl`            ← `SITE_CONFIG.fallbackUrl` (GitHub Pages tant
+//                              que le DNS Vercel n'est pas actif)
+//  - `useDisplayAsTarget`   ← dérivé de `SITE_CONFIG.domainStatus === 'live'`
 //
-// IMPORTANT : par défaut, on encode `targetUrl` qui pointe vers l'hébergement
-// actuel (GitHub Pages) afin que le QR fonctionne tout de suite. Le visuel
-// affiche cependant `displayDomain` ("app.mindprep.ai") pour ne pas exposer
-// l'URL GitHub. C'est intentionnel et documenté.
+// Tant que le domaine `app.mindprep.ai` n'est pas joignable en HTTPS, on
+// encode l'URL de repli pour que les QR distribués fonctionnent immédiatement.
+// Le visuel imprimé continue d'afficher `app.mindprep.ai` (jamais l'URL
+// GitHub) — c'est intentionnel et documenté dans `docs/13-qr-system.md`.
+// Bascule : voir `docs/14-vercel-deployment.md` et `DOMAIN_STATUS.md`.
+
+import { SITE_CONFIG } from '../site-config.js';
 
 export const QR_CONFIG = {
   // Domaine de marque, affiché sous le QR. Ne pas y mettre une URL GitHub.
-  displayDomain: 'app.mindprep.ai',
+  displayDomain: SITE_CONFIG.brandDomain,
 
-  // Cible réelle du QR. Tant que `app.mindprep.ai` n'est pas relié par DNS,
-  // on garde l'hébergement actuel (GitHub Pages) comme cible de scan pour
-  // éviter une expérience cassée. Une fois le domaine configuré (CNAME +
-  // HTTPS validé sur GitHub Pages ou autre host), basculer ce champ et
-  // passer `useDisplayAsTarget` à `true`.
-  targetUrl: 'https://ensupafrique-glitch.github.io/mindprep-app/',
+  // Cible réelle du QR (URL de repli tant que le domaine n'est pas actif).
+  targetUrl: SITE_CONFIG.fallbackUrl,
 
-  // Activer une fois le domaine prêt. Voir docs/13-qr-system.md.
-  useDisplayAsTarget: false,
+  // `true` dès que `SITE_CONFIG.domainStatus === 'live'` (DNS branché +
+  // HTTPS validé). Voir `core/site-config.js`.
+  useDisplayAsTarget: SITE_CONFIG.domainStatus === 'live',
 
   // Slogan principal affiché sur les visuels QR.
   cta: 'Scanner pour commencer votre préparation intelligente',

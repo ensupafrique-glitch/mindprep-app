@@ -33,7 +33,7 @@ export class PricingEngine {
             },
             basic: {
                 name: 'Essentiel',
-                price: 2500, // 2500 FCFA
+                price: 1250, // 1250 FCFA
                 currency: 'XOF',
                 stripePriceId: 'price_basic_monthly',
                 features: {
@@ -59,7 +59,7 @@ export class PricingEngine {
             },
             premium: {
                 name: 'Premium',
-                price: 5000, // 5000 FCFA
+                price: 2500, // 2500 FCFA
                 currency: 'XOF',
                 stripePriceId: 'price_premium_monthly',
                 features: {
@@ -85,7 +85,7 @@ export class PricingEngine {
             },
             pro: {
                 name: 'Professionnel',
-                price: 15000, // 15000 FCFA
+                price: 7500, // 7500 FCFA
                 currency: 'XOF',
                 stripePriceId: 'price_pro_monthly',
                 features: {
@@ -120,9 +120,9 @@ export class PricingEngine {
 
         this.reportPricing = {
             single: {
-                basic: 500, // 500 FCFA pour un rapport basique
-                full: 1500, // 1500 FCFA pour un rapport complet
-                premium: 2500 // 2500 FCFA pour un rapport premium
+                basic: 250, // 250 FCFA pour un rapport basique
+                full: 750, // 750 FCFA pour un rapport complet
+                premium: 1250 // 1250 FCFA pour un rapport premium
             },
             bulk: {
                 '5': { discount: 10 },

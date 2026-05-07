@@ -1509,6 +1509,31 @@ button {
   color: var(--muted);
 }
 
+/* ===== Révélation des prix Premium dans le paywall =====
+ * Tant qu'un plan Premium n'est pas sélectionné, on masque le tarif derrière
+ * un libellé neutre. Le clic sur l'onglet du plan révèle le tarif. */
+.paywall-price--hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(15, 118, 110, 0.06);
+  border: 1px dashed rgba(15, 118, 110, 0.35);
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 600;
+}
+.paywall-price-placeholder {
+  font-size: 0.95rem;
+}
+.paywall-price-content {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
 .credits-pack-price-alt {
   display: block;
   font-size: 0.8rem;
@@ -5548,6 +5573,74 @@ body > .subscription-status {
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--landing-muted);
+}
+
+/* ===== Sélecteur de devise sur la landing ===== */
+.landing-currency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  margin: 0 auto 24px;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  max-width: 720px;
+}
+.landing-currency-label {
+  font-weight: 700;
+  color: var(--landing-ink);
+  font-size: 0.95rem;
+}
+.landing-currency-toggle {
+  display: inline-flex;
+  background: white;
+  border: 1px solid var(--landing-line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.landing-currency-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--landing-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.landing-currency-btn.active {
+  background: var(--landing-emerald-strong, #047857);
+  color: white;
+}
+.landing-currency-hint {
+  flex: 1 1 220px;
+  color: var(--landing-muted);
+  font-size: 0.85rem;
+}
+
+/* ===== Tarif masqué a priori sur la landing ===== */
+.landing-plan-price--hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px dashed rgba(16, 185, 129, 0.4);
+  color: var(--landing-muted);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.landing-plan-price-placeholder {
+  font-size: 0.95rem;
+}
+.landing-plan-reveal-btn {
+  align-self: flex-start;
 }
 .landing-plan ul {
   list-style: none;

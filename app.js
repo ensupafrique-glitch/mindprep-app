@@ -587,14 +587,14 @@ function showMonetizationModal(accessResult) {
           <!-- Option 1: Crédits à l'unité -->
           <div class="option" style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; cursor: pointer;" onclick="selectPricingOption('credits')">
             <h4 style="margin: 0; color: #333;">📄 Crédits de rapport</h4>
-            <p style="margin: 5px 0; color: #666;">1 rapport complet = 2,500 CFA</p>
+            <p style="margin: 5px 0; color: #666;">1 rapport complet = 1,250 CFA</p>
             <div class="quantity-selector" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
               <button onclick="changeQuantity(-1)" style="padding: 5px 10px; border: 1px solid #ccc; background: #f9f9f9;">-</button>
               <span id="quantity">1</span>
               <button onclick="changeQuantity(1)" style="padding: 5px 10px; border: 1px solid #ccc; background: #f9f9f9;">+</button>
             </div>
             <div class="price-display" style="margin-top: 10px; font-weight: bold; color: #007acc;">
-              Total: <span id="totalPrice">2,500</span> CFA
+              Total: <span id="totalPrice">1,250</span> CFA
             </div>
           </div>
 
@@ -602,7 +602,7 @@ function showMonetizationModal(accessResult) {
           <div class="option" style="border: 2px solid #007acc; border-radius: 8px; padding: 15px; cursor: pointer;" onclick="selectPricingOption('basic')">
             <h4 style="margin: 0; color: #007acc;">⭐ Abonnement Basic</h4>
             <p style="margin: 5px 0; color: #666;">15 rapports/mois + exports PDF</p>
-            <div style="font-weight: bold; color: #007acc; font-size: 18px;">7,500 CFA/mois</div>
+            <div style="font-weight: bold; color: #007acc; font-size: 18px;">3,750 CFA/mois</div>
             <div style="color: #666; font-size: 12px;">Économisez vs achat à l'unité</div>
           </div>
 
@@ -610,7 +610,7 @@ function showMonetizationModal(accessResult) {
           <div class="option premium" style="border: 2px solid #ffd700; border-radius: 8px; padding: 15px; cursor: pointer;" onclick="selectPricingOption('premium')">
             <h4 style="margin: 0; color: #b8860b;">💎 Abonnement Premium</h4>
             <p style="margin: 5px 0; color: #666;">Rapports illimités + analyses avancées + support prioritaire</p>
-            <div style="font-weight: bold; color: #b8860b; font-size: 18px;">15,000 CFA/mois</div>
+            <div style="font-weight: bold; color: #b8860b; font-size: 18px;">7,500 CFA/mois</div>
             <div style="color: #666; font-size: 12px;">Le plus populaire</div>
           </div>
         </div>
@@ -628,7 +628,7 @@ function showMonetizationModal(accessResult) {
   // Variables pour le modal
   let selectedOption = 'basic';
   let quantity = 1;
-  const pricePerUnit = 2500;
+  const pricePerUnit = 1250;
 
   // Fonctions du modal
   window.selectPricingOption = function(option) {
@@ -2603,6 +2603,54 @@ currencyButtons.forEach((btn) => {
   btn.addEventListener("click", () => applyCurrency(btn.dataset.currency));
 });
 
+/* ===== Landing pricing — devise + révélation différée des prix Premium =====
+ * Sur la landing, les prix Premium Étudiant / Premium Professeur ne sont pas
+ * affichés a priori. L'utilisateur clique sur « Voir le tarif » pour révéler
+ * le tarif (FCFA ou EUR) avant de continuer vers l'app. */
+const landingCurrencyButtons = document.querySelectorAll("[data-landing-currency]");
+const landingPriceTargets = document.querySelectorAll("[data-landing-price]");
+let landingCurrency = "FCFA";
+
+function applyLandingCurrency(currency) {
+  landingCurrency = currency === "EUR" ? "EUR" : "FCFA";
+  landingCurrencyButtons.forEach((b) => {
+    const active = b.dataset.landingCurrency === landingCurrency;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-checked", active ? "true" : "false");
+  });
+  landingPriceTargets.forEach((el) => {
+    const label = el.dataset[landingCurrency.toLowerCase()];
+    if (label) el.textContent = label;
+  });
+}
+
+landingCurrencyButtons.forEach((btn) => {
+  btn.addEventListener("click", () => applyLandingCurrency(btn.dataset.landingCurrency));
+});
+
+document.querySelectorAll("[data-landing-reveal]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const card = btn.closest("[data-landing-plan-card]");
+    if (!card) return;
+    const reveal = card.querySelector("[data-landing-price-reveal]");
+    if (!reveal) return;
+    card.dataset.priceRevealed = "true";
+    reveal.classList.remove("landing-plan-price--hidden");
+    const placeholder = reveal.querySelector(".landing-plan-price-placeholder");
+    const value = reveal.querySelector(".landing-plan-price-value");
+    if (placeholder) placeholder.hidden = true;
+    if (value) value.hidden = false;
+    // S'assure que la devise active est bien appliquée juste après la révélation
+    applyLandingCurrency(landingCurrency);
+    btn.classList.add("is-hidden");
+    const cta = card.querySelector(".landing-plan-cta");
+    if (cta) cta.classList.remove("is-hidden");
+  });
+});
+
+// Initialise la devise par défaut sur la landing
+applyLandingCurrency(landingCurrency);
+
 const planLabels = {
   free: "Gratuit",
   student: "Premium Étudiant",
@@ -2643,12 +2691,36 @@ function setActivePaywallMode(mode) {
 
 function setActivePlanTab(plan) {
   paywallTabs.forEach((t) => t.classList.toggle("active", t.dataset.plan === plan));
-  paywallCards.forEach((c) => c.classList.toggle("active", c.dataset.planCard === plan));
+  paywallCards.forEach((c) => {
+    const isActive = c.dataset.planCard === plan;
+    c.classList.toggle("active", isActive);
+    // Révèle le prix uniquement pour les plans Premium (revealable) actifs
+    if (c.dataset.paywallRevealable === "true") {
+      const reveal = c.querySelector("[data-paywall-price-reveal]");
+      if (reveal) {
+        const placeholder = reveal.querySelector(".paywall-price-placeholder");
+        const content = reveal.querySelector(".paywall-price-content");
+        if (isActive) {
+          c.dataset.priceRevealed = "true";
+          reveal.classList.remove("paywall-price--hidden");
+          if (placeholder) placeholder.hidden = true;
+          if (content) content.hidden = false;
+        } else {
+          c.dataset.priceRevealed = "false";
+          reveal.classList.add("paywall-price--hidden");
+          if (placeholder) placeholder.hidden = false;
+          if (content) content.hidden = true;
+        }
+      }
+    }
+  });
 }
 
-function openPaywall(plan = "student") {
+function openPaywall(plan = "free") {
   if (!paywallModal) return;
   setActivePaywallMode("subscription");
+  // Par défaut on n'affiche aucun prix Premium : on active "free" tant que
+  // l'utilisateur n'a pas sélectionné un plan Premium Étudiant ou Professeur.
   setActivePlanTab(plan);
   paywallPayment?.classList.add("is-hidden");
   selectedPlan = null;

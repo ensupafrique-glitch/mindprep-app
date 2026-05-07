@@ -8,6 +8,20 @@ export { PaymentEngine } from './payment-engine.js';
 export { CheckoutEngine } from './checkout-engine.js';
 export { AccessEngine } from './access-engine.js';
 export { InvoiceEngine } from './invoice-engine.js';
+export {
+    BillingOrchestrator,
+    PAYMENT_CHANNEL_ROUTING,
+    PLANS,
+    CREDITS_PACKS
+} from './billing-orchestrator.js';
+export {
+    BasePaymentProvider,
+    PayDunyaProvider,
+    StripeProvider,
+    PayPalProvider,
+    WaveBusinessProvider,
+    buildDefaultRegistry
+} from './providers/index.js';
 
 // Configuration globale du module
 export const BILLING_CONFIG = {

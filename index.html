@@ -952,6 +952,59 @@
               <p>MindPrep ne partage jamais tes copies. Les corrections sont générées localement en démo.</p>
               <button class="secondary-button" type="button" id="settingsLogout">Se déconnecter</button>
             </article>
+
+            <!-- ===== Panneau admin : revenus & paiements (démo locale) ===== -->
+            <article class="settings-panel admin-billing-panel" id="adminBillingPanel">
+              <p class="eyebrow">Espace administrateur</p>
+              <h3>💰 Revenus &amp; paiements MindPrep</h3>
+              <p class="admin-billing-intro">Vue locale en temps réel des transactions effectuées dans cette session : revenus, providers utilisés, statuts. <strong>En production</strong>, ces données viendront de ton compte marchand (PayDunya, Stripe, PayPal) ou Wave Business via leurs webhooks.</p>
+
+              <div class="admin-billing-totals" id="adminBillingTotals">
+                <div class="admin-billing-tile">
+                  <span class="admin-billing-tile-label">Revenu total (FCFA)</span>
+                  <span class="admin-billing-tile-value" data-admin-total="XOF">0 FCFA</span>
+                </div>
+                <div class="admin-billing-tile">
+                  <span class="admin-billing-tile-label">Revenu total (€)</span>
+                  <span class="admin-billing-tile-value" data-admin-total="EUR">0,00 €</span>
+                </div>
+                <div class="admin-billing-tile">
+                  <span class="admin-billing-tile-label">Transactions confirmées</span>
+                  <span class="admin-billing-tile-value" data-admin-count="completed">0</span>
+                </div>
+                <div class="admin-billing-tile">
+                  <span class="admin-billing-tile-label">En attente</span>
+                  <span class="admin-billing-tile-value" data-admin-count="pending">0</span>
+                </div>
+                <div class="admin-billing-tile">
+                  <span class="admin-billing-tile-label">Échouées</span>
+                  <span class="admin-billing-tile-value" data-admin-count="failed">0</span>
+                </div>
+              </div>
+
+              <div class="admin-billing-providers">
+                <h4>Où l'argent arrive</h4>
+                <ul class="admin-billing-providers-list">
+                  <li><strong>PayDunya</strong> — Wave, Orange Money, Free Money, carte locale (FCFA). Reversement sur ton compte bancaire ou ton wallet PayDunya à la cadence configurée dans le back-office.</li>
+                  <li><strong>Stripe</strong> — Carte bancaire internationale (EUR / USD). Payout automatique sur ton IBAN entreprise (selon planning Stripe : J+2 à J+7 selon pays).</li>
+                  <li><strong>PayPal</strong> — Compte PayPal ou carte (EUR / USD). Solde disponible immédiatement, retrait manuel vers ton compte bancaire.</li>
+                  <li><strong>Wave Business</strong> <em>(à venir)</em> — Encaissement direct Wave (XOF), reversement sur ton compte Wave Business. Réduit les frais vs PayDunya.</li>
+                </ul>
+                <p class="admin-billing-providers-status" id="adminProvidersStatus"></p>
+              </div>
+
+              <h4>Dernières transactions</h4>
+              <div class="admin-billing-table-wrap">
+                <table class="admin-billing-table" id="adminBillingTable">
+                  <thead>
+                    <tr><th>Date</th><th>Produit</th><th>Montant</th><th>Provider</th><th>Statut</th><th>Référence</th></tr>
+                  </thead>
+                  <tbody><tr><td colspan="6" class="admin-billing-empty">Aucune transaction pour l'instant — déclenche un paiement de démo depuis le paywall.</td></tr></tbody>
+                </table>
+              </div>
+
+              <p class="paywall-disclaimer">ℹ️ Cette vue est volontairement locale (mémoire de session). Pour persister les revenus, branche un backend (Supabase, base de données) qui consommera les webhooks PayDunya / Stripe / PayPal et appellera <code>BillingOrchestrator.confirmPayment(reference, payload)</code>.</p>
+            </article>
           </div>
           </div>
         </section>
@@ -2334,16 +2387,18 @@
           </div>
 
           <div class="payment-group">
-            <h4 class="payment-group-title">📱 Paiement mobile money (FCFA)</h4>
-            <p class="payment-group-sub">Afrique de l'Ouest — paiement instantané depuis ton téléphone.</p>
+            <h4 class="payment-group-title">📱 Paiement mobile money &amp; carte locale (FCFA via PayDunya)</h4>
+            <p class="payment-group-sub">Afrique de l'Ouest — paiement instantané. <strong>PayDunya</strong> est notre passerelle principale et route Wave / Orange Money / Free Money / Carte locale.</p>
             <div class="payment-methods" role="radiogroup" aria-label="Méthodes de paiement mobile money">
-              <button class="payment-method" type="button" data-payment="wave" data-currency-pref="FCFA"><span aria-hidden="true">🌊</span> Wave</button>
-              <button class="payment-method" type="button" data-payment="orange-money" data-currency-pref="FCFA"><span aria-hidden="true">🟠</span> Orange Money</button>
-              <button class="payment-method" type="button" data-payment="free-money" data-currency-pref="FCFA"><span aria-hidden="true">💚</span> Free Money</button>
+              <button class="payment-method" type="button" data-payment="wave" data-currency-pref="FCFA" data-provider="paydunya"><span aria-hidden="true">🌊</span> Wave <small>(PayDunya)</small></button>
+              <button class="payment-method" type="button" data-payment="orange-money" data-currency-pref="FCFA" data-provider="paydunya"><span aria-hidden="true">🟠</span> Orange Money <small>(PayDunya)</small></button>
+              <button class="payment-method" type="button" data-payment="free-money" data-currency-pref="FCFA" data-provider="paydunya"><span aria-hidden="true">💚</span> Free Money <small>(PayDunya)</small></button>
+              <button class="payment-method" type="button" data-payment="paydunya-card" data-currency-pref="FCFA" data-provider="paydunya"><span aria-hidden="true">💳</span> Carte locale <small>(PayDunya)</small></button>
+              <button class="payment-method payment-method--soon" type="button" data-payment="wave-business" data-currency-pref="FCFA" data-provider="wave-business" title="Intégration Wave Business directe à venir"><span aria-hidden="true">🌊</span> Wave direct <small>(à venir)</small></button>
             </div>
           </div>
 
-          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel ne sera prélevé tant que les clés API (Stripe, PayPal, Wave, Orange Money, Free Money) ne sont pas configurées côté serveur. Les boutons restent des placeholders à brancher.</p>
+          <p class="paywall-disclaimer">⚠️ Démo : aucun paiement réel n'est prélevé tant que les clés marchandes (PayDunya, Stripe, PayPal, Wave Business) ne sont pas configurées côté serveur. Les boutons restent des points d'intégration prêts à brancher — voir <code>docs/12-paiements-payouts.md</code>.</p>
         </section>
       </div>
     </div>
@@ -2356,6 +2411,23 @@
         <p id="paymentSuccessMessage">Votre abonnement Premium est actif pour 30 jours.</p>
         <ul class="confirm-features" id="paymentSuccessFeatures"></ul>
         <button class="primary-button" type="button" id="paymentSuccessStart">Commencer</button>
+      </div>
+    </div>
+
+    <!-- Étape intermédiaire « paiement en cours » : affiche le canal, le statut et un
+         bouton « Confirmer paiement (démo) » tant qu'aucune passerelle réelle n'est branchée. -->
+    <div class="confirm-modal is-hidden" id="paymentPendingModal" role="dialog" aria-modal="true" aria-labelledby="paymentPendingTitle">
+      <div class="paywall-backdrop"></div>
+      <div class="confirm-dialog payment-pending-dialog" role="document">
+        <div class="confirm-emoji" aria-hidden="true">💳</div>
+        <h2 id="paymentPendingTitle">Paiement en cours</h2>
+        <p id="paymentPendingDetail" class="payment-pending-detail">Initialisation…</p>
+        <ol class="payment-pending-steps" id="paymentPendingSteps"></ol>
+        <div class="payment-pending-actions">
+          <button class="secondary-button" type="button" id="paymentPendingCancel">Annuler</button>
+          <button class="primary-button" type="button" id="paymentPendingConfirm">✓ Confirmer paiement (démo)</button>
+        </div>
+        <p class="paywall-disclaimer">⚠️ Démo : tant qu'aucune clé marchande PayDunya / Stripe / PayPal n'est configurée côté serveur, ce bouton simule la confirmation. En production, le webhook du gateway appellera <code>BillingOrchestrator.confirmPayment</code>.</p>
       </div>
     </div>
 

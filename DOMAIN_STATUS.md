@@ -21,6 +21,20 @@
 Hébergement actif (fallback) :
 **`https://ensupafrique-glitch.github.io/mindprep-app/`** — GitHub Pages.
 
+## Avant toute action — sécurité
+
+Lire **dans cet ordre** :
+
+1. [`docs/15-securite-migration.md`](./docs/15-securite-migration.md) — protocole de sécurité (sauvegarde, audit env, Supabase, IA, paiements, SSL, responsive, rollback).
+2. [`MIGRATION_CHECKLIST.md`](./MIGRATION_CHECKLIST.md) — checklist opérationnelle à cocher (phases A → E).
+3. [`.env.production.example`](./.env.production.example) — variables à saisir côté Vercel (aucun secret).
+4. [`docs/16-rollback-plan.md`](./docs/16-rollback-plan.md) — plan de retour arrière (L1 à L4).
+
+Smoke test non destructif :
+```bash
+MINDPREP_BASE_URL=https://<projet>.vercel.app node scripts/smoke-test-migration.mjs
+```
+
 ## Comment basculer
 
 1. Suivre [`docs/14-vercel-deployment.md`](./docs/14-vercel-deployment.md)

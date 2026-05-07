@@ -23,6 +23,9 @@ pratique ciblee sur les vrais points faibles.
 - `assets/qr/` : QR pré-générés (étudiant, concours, professeur, marketing × clair/sombre).
 - `vercel.json` : config Vercel (headers MIME modules ESM, alias `/qr` → `qr.html`).
 - `DOMAIN_STATUS.md` : checklist de bascule du domaine `app.mindprep.ai`.
+- `MIGRATION_CHECKLIST.md` : checklist opérationnelle de bascule (à cocher).
+- `.env.production.example` : variables d'env attendues côté Vercel (sans secret).
+- `scripts/smoke-test-migration.mjs` : smoke test HTTP non destructif.
 
 ## Hébergement & domaine
 
@@ -30,9 +33,13 @@ Le domaine cible est **`https://app.mindprep.ai`**, hébergé sur **Vercel**.
 Tant que le DNS n'est pas branché, l'app reste servie par
 `https://ensupafrique-glitch.github.io/mindprep-app/` (fallback). Les QR
 codes affichent toujours `app.mindprep.ai` mais encodent l'URL de repli
-jusqu'à la bascule. Procédure complète :
-[`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md). Statut :
-[`DOMAIN_STATUS.md`](DOMAIN_STATUS.md).
+jusqu'à la bascule.
+
+- Procédure technique : [`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md).
+- **Sécurité de migration** : [`docs/15-securite-migration.md`](docs/15-securite-migration.md).
+- **Plan de rollback** : [`docs/16-rollback-plan.md`](docs/16-rollback-plan.md).
+- Checklist opérationnelle : [`MIGRATION_CHECKLIST.md`](MIGRATION_CHECKLIST.md).
+- Statut courant : [`DOMAIN_STATUS.md`](DOMAIN_STATUS.md).
 
 ## Lancer le frontend
 

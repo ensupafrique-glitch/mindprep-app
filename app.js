@@ -2,6 +2,7 @@ import { PedagogyEngine } from "./core/pedagogy-engine/index.js";
 import { renderCourse } from "./core/renderers/course-renderer.js";
 import { courseExamples } from "./data/examples.js";
 import { AccessEngine, CheckoutEngine, PricingEngine, BillingUtils } from "./core/billing/index.js";
+import { BillingOrchestrator } from "./core/billing/billing-orchestrator.js";
 import { ReportEngine, PDFExporter, DOCXExporter, ReportingUtils } from "./core/reporting/index.js";
 import {
   generateTopics,
@@ -2559,8 +2560,9 @@ document.querySelector("#upgradeInline").addEventListener("click", () => {
 });
 
 document.querySelector("#startTrial").addEventListener("click", () => {
-  // Lance directement la simulation d'activation (essai gratuit 7 jours)
-  simulatePaymentSuccess("student", null, { trial: true, durationDays: 7 });
+  // Essai gratuit 7 jours : on active immédiatement les entitlements via
+  // l'orchestrator (transaction interne à 0, marquée trial).
+  startFreeTrial("student", 7);
 });
 
 const openPaywallBtn = document.querySelector("#openPaywallBtn");
@@ -2811,108 +2813,225 @@ paywallModal?.querySelectorAll(".payment-method").forEach((btn) => {
   });
 });
 
-function initiateCreditsPurchase(pack, method) {
+/* ===== Billing orchestrator (PayDunya / Stripe / PayPal / Wave Business) =====
+ * Toutes les transactions passent désormais par le BillingOrchestrator, qui :
+ *  - route la méthode UI vers le bon adapter (PayDunya pour Wave/OM/Free Money/carte XOF,
+ *    Stripe/PayPal pour les cartes EUR, Wave Business pour la future intégration directe),
+ *  - garde l'historique des transactions (statuts pending → completed/failed),
+ *  - applique les entitlements au succès (Premium Étudiant/Pro, crédits),
+ *  - alimente le panneau Admin "Revenus & paiements".
+ * Aucune clé API n'est requise : tant qu'aucune n'est fournie via window.MINDPREP_CONFIG
+ * ou process.env, les adapters restent en mode simulation déterministe.
+ */
+const billingOrchestrator = new BillingOrchestrator();
+if (typeof window !== "undefined") {
+  window.MindPrepBilling = billingOrchestrator;
+}
+
+let pendingTransaction = null;
+
+function methodToProviderLabel(method) {
+  const map = {
+    wave: "PayDunya · Wave",
+    "orange-money": "PayDunya · Orange Money",
+    "free-money": "PayDunya · Free Money",
+    "paydunya-card": "PayDunya · Carte bancaire",
+    stripe: "Stripe (carte bancaire)",
+    paypal: "PayPal",
+    "wave-business": "Wave Business (à venir)"
+  };
+  return map[method] || method;
+}
+
+function formatAmount(amount, currency) {
+  if (currency === "EUR") {
+    return `${amount.toString().replace(".", ",")} €`;
+  }
+  return `${amount} FCFA`;
+}
+
+async function initiateCreditsPurchase(pack, method) {
   if (requireAccount("Crée un compte pour acheter des crédits et les retrouver à chaque connexion.")) {
     return;
   }
-  const providerLabels = {
-    wave: "Wave",
-    "orange-money": "Orange Money",
-    "free-money": "Free Money",
-    stripe: "Stripe (carte bancaire)",
-    paypal: "PayPal (carte bancaire)",
-  };
-  // Carte bancaire (Stripe / PayPal) → EUR ; mobile money → FCFA
-  const isCardMethod = method === "stripe" || method === "paypal";
-  const provider = providerLabels[method] || method;
-  const amountLabel = isCardMethod && pack.amountEur
-    ? `${pack.amountEur.toString().replace(".", ",")} €`
-    : `${pack.amount} FCFA`;
-  showToast(`Initialisation de l'achat ${pack.label} (${amountLabel}) via ${provider}… (placeholder, aucune API branchée)`);
-  window.setTimeout(() => {
-    closePaywall();
-    const successModal = document.querySelector("#paymentSuccessModal");
-    const messageEl = document.querySelector("#paymentSuccessMessage");
-    const featuresEl = document.querySelector("#paymentSuccessFeatures");
-    if (messageEl) {
-      messageEl.textContent = `${pack.label} activé : ${pack.credits} crédits ajoutés à ton compte (paiement ${amountLabel} via ${provider}).`;
-    }
-    if (featuresEl) {
-      featuresEl.innerHTML = [
-        `Analyser un cours : 1 crédit`,
-        `Sujet difficile : 2 crédits`,
-        `Correction d'une copie : 3 crédits`,
-        `Assistant Coach personnalisé (15 min) : 2 crédits`,
-      ]
-        .map((f) => `<li>✓ ${f}</li>`)
-        .join("");
-    }
-    if (successModal) successModal.classList.remove("is-hidden");
-  }, 900);
+  const result = await billingOrchestrator.createPayment({
+    kind: "credits",
+    productId: pack.id,
+    method,
+    userId: currentUser?.id || "guest",
+    email: currentUser?.email || null
+  });
+  if (!result.success) {
+    showToast(result.error || "Impossible d'initialiser le paiement.");
+    return;
+  }
+  pendingTransaction = result.transaction;
+  showPendingPayment(result.transaction);
 }
 
-/**
- * Initie un paiement. Aucune clé API n'étant configurée, on simule un succès.
- * Les fonctions par méthode sont des points d'intégration prêts à brancher.
- */
-function initiatePayment(plan, method) {
+async function initiatePayment(plan, method) {
   if (requireAccount("Crée un compte pour activer ton abonnement Premium et le synchroniser sur tous tes appareils.")) {
     return;
   }
-  const handlers = {
-    wave: (p) => paymentPlaceholder("Wave", p),
-    "orange-money": (p) => paymentPlaceholder("Orange Money", p),
-    "free-money": (p) => paymentPlaceholder("Free Money", p),
-    stripe: (p) => paymentPlaceholder("Stripe", p),
-    paypal: (p) => paymentPlaceholder("PayPal", p),
-  };
-  const handler = handlers[method];
-  if (!handler) return;
-  handler(plan);
+  const result = await billingOrchestrator.createPayment({
+    kind: "plan",
+    productId: plan,
+    method,
+    userId: currentUser?.id || "guest",
+    email: currentUser?.email || null
+  });
+  if (!result.success) {
+    showToast(result.error || "Impossible d'initialiser le paiement.");
+    return;
+  }
+  pendingTransaction = result.transaction;
+  showPendingPayment(result.transaction);
 }
 
 /**
- * Placeholder pour intégration future d'une vraie API de paiement.
- * Aucune transaction réelle n'est effectuée — Stripe / PayPal / Wave / Orange Money / Free Money
- * doivent être branchés côté serveur avec leurs clés API respectives.
+ * Affiche l'étape "paiement en cours" et un bouton « Confirmer paiement (démo) »
+ * tant qu'aucune passerelle n'est branchée. En mode live, le webhook du provider
+ * appellera `billingOrchestrator.confirmPayment(reference, payload)` côté serveur.
  */
-function paymentPlaceholder(providerName, plan) {
-  showToast(`Initialisation du paiement via ${providerName}… (placeholder, aucune API branchée)`);
-  window.setTimeout(() => {
-    simulatePaymentSuccess(plan, providerName);
-  }, 900);
+function showPendingPayment(transaction) {
+  const modal = document.querySelector("#paymentPendingModal");
+  const titleEl = document.querySelector("#paymentPendingTitle");
+  const detailEl = document.querySelector("#paymentPendingDetail");
+  const stepsEl = document.querySelector("#paymentPendingSteps");
+  const confirmBtn = document.querySelector("#paymentPendingConfirm");
+  const cancelBtn = document.querySelector("#paymentPendingCancel");
+  if (!modal) {
+    // Fallback : on confirme directement.
+    confirmCurrentPayment();
+    return;
+  }
+  const providerLabel = methodToProviderLabel(transaction.method);
+  const amount = formatAmount(transaction.amount, transaction.currency);
+  if (titleEl) titleEl.textContent = `Paiement ${transaction.productLabel}`;
+  if (detailEl) {
+    detailEl.innerHTML = `
+      <strong>${amount}</strong> via <strong>${providerLabel}</strong>.<br/>
+      Référence : <code>${transaction.reference}</code><br/>
+      ${transaction.simulated ? "⚙️ Mode <strong>simulation</strong> : aucune somme n'est prélevée tant qu'aucune clé marchande n'est configurée." : "🔐 Mode live détecté : la passerelle prendra le relais."}
+    `;
+  }
+  if (stepsEl) {
+    stepsEl.innerHTML = ["⏳ En attente du paiement", "✅ Confirmation reçue", "🎉 Premium activé"]
+      .map((s) => `<li>${s}</li>`)
+      .join("");
+  }
+  if (confirmBtn) {
+    confirmBtn.textContent = transaction.simulated
+      ? "✓ Confirmer paiement (démo)"
+      : "✓ Vérifier la confirmation";
+    confirmBtn.onclick = () => confirmCurrentPayment();
+  }
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      modal.classList.add("is-hidden");
+      pendingTransaction = null;
+    };
+  }
+  modal.classList.remove("is-hidden");
 }
 
-/**
- * Simule l'activation post-paiement et affiche le modal de confirmation.
- */
-function simulatePaymentSuccess(plan, providerName, opts = {}) {
+async function confirmCurrentPayment() {
+  if (!pendingTransaction) return;
+  const result = await billingOrchestrator.confirmPayment(pendingTransaction.reference, {
+    status: "completed",
+    reference: pendingTransaction.reference
+  });
+  document.querySelector("#paymentPendingModal")?.classList.add("is-hidden");
+  if (!result.success) {
+    showToast(result.error || "Confirmation impossible.");
+    return;
+  }
+  applyEntitlementsToCurrentUser(result.entitlements);
+  showSuccessForTransaction(result.transaction, result.entitlements);
+  refreshAdminBilling();
+  pendingTransaction = null;
+}
+
+function applyEntitlementsToCurrentUser(entitlements) {
+  if (!entitlements || !currentUser) return;
+  if (entitlements.tier && entitlements.tier !== "free") {
+    currentUser.tier = entitlements.tier;
+  }
+  // Conserve le shape historique {full: n} pour compat avec le reste de l'app,
+  // tout en exposant un compteur global `creditsTotal` pour l'UI billing.
+  currentUser.creditsTotal = entitlements.credits || 0;
+  currentUser.premiumUntil = entitlements.premiumUntil || null;
+}
+
+function showSuccessForTransaction(tx, entitlements) {
   closePaywall();
-  const durationDays = opts.durationDays ?? 30;
-  const isTrial = !!opts.trial;
-  const planLabel = planLabels[plan] || plan;
-  const features = planFeatures[plan] || [];
-
+  const successModal = document.querySelector("#paymentSuccessModal");
   const messageEl = document.querySelector("#paymentSuccessMessage");
   const featuresEl = document.querySelector("#paymentSuccessFeatures");
-  const successModal = document.querySelector("#paymentSuccessModal");
-
+  const providerLabel = methodToProviderLabel(tx.method);
+  const amount = formatAmount(tx.amount, tx.currency);
   if (messageEl) {
-    const via = providerName ? ` via ${providerName}` : "";
-    messageEl.textContent = isTrial
-      ? `Votre essai ${planLabel} est actif pour ${durationDays} jours${via}.`
-      : `Félicitations, votre abonnement ${planLabel} est actif pour ${durationDays} jours${via}.`;
+    if (tx.kind === "credits") {
+      messageEl.textContent = `${tx.productLabel} activé : ${entitlements.credits} crédits au total (paiement ${amount} via ${providerLabel}).`;
+    } else {
+      const until = entitlements.premiumUntil ? ` jusqu'au ${new Date(entitlements.premiumUntil).toLocaleDateString("fr-FR")}` : "";
+      messageEl.textContent = `Félicitations, ton ${tx.productLabel} est actif${until} (paiement ${amount} via ${providerLabel}).`;
+    }
   }
   if (featuresEl) {
+    const features = tx.kind === "plan" && planFeatures[tx.productId]
+      ? planFeatures[tx.productId]
+      : [
+          "Analyser un cours : 1 crédit",
+          "Sujet difficile : 2 crédits",
+          "Correction d'une copie : 3 crédits",
+          "Assistant Coach personnalisé (15 min) : 2 crédits"
+        ];
     featuresEl.innerHTML = features.map((f) => `<li>✓ ${f}</li>`).join("");
   }
-  if (successModal) {
-    successModal.classList.remove("is-hidden");
-  }
+  if (successModal) successModal.classList.remove("is-hidden");
+}
 
-  // Mise à jour locale du tier utilisateur (en attendant intégration backend)
-  if (plan === "student") currentUser.tier = "premium";
-  if (plan === "teacher") currentUser.tier = "pro";
+/**
+ * Active un essai gratuit en injectant une transaction "trial" dans le ledger.
+ * Aucun appel à un provider — l'essai est offert par MindPrep directement.
+ */
+function startFreeTrial(plan, durationDays = 7) {
+  const product = billingOrchestrator.catalog().plans[plan];
+  if (!product) return;
+  const ref = `MP-TRIAL-${plan.toUpperCase()}-${Date.now()}`;
+  const tx = {
+    reference: ref,
+    providerId: "internal",
+    providerName: "Essai MindPrep",
+    method: "trial",
+    channel: "trial",
+    kind: "plan",
+    productId: plan,
+    productLabel: `${product.label} (essai)`,
+    amount: 0,
+    currency: "XOF",
+    status: "completed",
+    simulated: true,
+    createdAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    userId: currentUser?.id || "guest"
+  };
+  billingOrchestrator.transactions.set(ref, tx);
+  // Construire un entitlement temporaire avec la durée d'essai demandée.
+  const ent = billingOrchestrator.entitlementsFor(tx.userId);
+  const baseDate = ent.premiumUntil && new Date(ent.premiumUntil) > new Date()
+    ? new Date(ent.premiumUntil)
+    : new Date();
+  baseDate.setDate(baseDate.getDate() + durationDays);
+  ent.tier = product.tier;
+  ent.premiumUntil = baseDate.toISOString();
+  ent.history = ent.history || [];
+  ent.history.push({ reference: ref, productId: plan, productLabel: tx.productLabel, amount: 0, currency: "XOF", provider: "Essai MindPrep", at: tx.completedAt });
+  billingOrchestrator.entitlements.set(tx.userId, ent);
+  applyEntitlementsToCurrentUser(ent);
+  showSuccessForTransaction(tx, ent);
+  refreshAdminBilling();
 }
 
 const paymentSuccessModal = document.querySelector("#paymentSuccessModal");
@@ -2924,6 +3043,61 @@ document.querySelector("#paymentSuccessStart")?.addEventListener("click", () => 
   setView("dashboard");
   showToast("Bienvenue dans l'expérience Premium !");
 });
+
+/* ===== Admin billing panel ===== */
+function refreshAdminBilling() {
+  const panel = document.querySelector("#adminBillingPanel");
+  if (!panel) return;
+  const summary = billingOrchestrator.revenueSummary();
+  const xofEl = panel.querySelector('[data-admin-total="XOF"]');
+  const eurEl = panel.querySelector('[data-admin-total="EUR"]');
+  if (xofEl) xofEl.textContent = `${summary.totals.XOF || 0} FCFA`;
+  if (eurEl) eurEl.textContent = `${(summary.totals.EUR || 0).toFixed(2).replace(".", ",")} €`;
+  ["completed", "pending", "failed"].forEach((status) => {
+    const el = panel.querySelector(`[data-admin-count="${status}"]`);
+    if (el) el.textContent = String(summary.counts[status] || 0);
+  });
+  const tbody = panel.querySelector("#adminBillingTable tbody");
+  if (tbody) {
+    if (!summary.transactions.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="admin-billing-empty">Aucune transaction pour l\'instant — déclenche un paiement de démo depuis le paywall.</td></tr>';
+    } else {
+      tbody.innerHTML = summary.transactions.slice(0, 12).map((tx) => {
+        const date = new Date(tx.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+        const amount = tx.currency === "EUR"
+          ? `${tx.amount.toString().replace(".", ",")} €`
+          : `${tx.amount} FCFA`;
+        const statusClass = `admin-billing-status admin-billing-status--${tx.status}`;
+        const statusLabel = { completed: "Confirmé", pending: "En attente", failed: "Échec" }[tx.status] || tx.status;
+        return `<tr>
+          <td>${date}</td>
+          <td>${escapeHtml(tx.productLabel)}</td>
+          <td>${amount}</td>
+          <td>${escapeHtml(tx.providerName)}</td>
+          <td><span class="${statusClass}">${statusLabel}</span></td>
+          <td><code class="admin-billing-ref">${escapeHtml(tx.reference)}</code></td>
+        </tr>`;
+      }).join("");
+    }
+  }
+  const statusEl = panel.querySelector("#adminProvidersStatus");
+  if (statusEl) {
+    const provs = billingOrchestrator.describeProviders();
+    statusEl.innerHTML = provs.map((p) => {
+      const flag = p.isLive ? "🟢 connecté" : "⚪ simulation";
+      return `<span class="admin-provider-pill"><strong>${escapeHtml(p.name)}</strong> · ${flag}</span>`;
+    }).join(" ");
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+billingOrchestrator.on(() => refreshAdminBilling());
+// Premier rendu au chargement de la vue settings.
+document.addEventListener("DOMContentLoaded", refreshAdminBilling);
+refreshAdminBilling();
 
 document.querySelector("#examMode").addEventListener("click", () => {
   showToast("Mode examen prêt: chronométré, sans feedback immédiat.");

@@ -564,7 +564,7 @@ function renderPrintableHtml(p, opts = {}) {
     <h2>Préparation orale</h2><p>${escapeHtml(oral.summary || "")}</p><ul>${tpHtml}</ul>
     <h2>Questions probables</h2><ol>${qHtml}</ol>
     <h2>Bibliographie indicative</h2><ul>${bibHtml}</ul>
-    <hr/><small>Généré localement par MindPrep — Exposé intelligent IA.${opts.word ? " Format compatible Word." : ""}</small>
+    <hr/><small>Généré localement par MindPrep — Assistant Exposé.${opts.word ? " Format compatible Word." : ""}</small>
   `;
 }
 

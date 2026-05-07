@@ -2042,6 +2042,23 @@ if (guestAccess) {
   });
 }
 
+// Système QR : expose un hook global utilisé par la landing post-scan
+// pour basculer en mode invité, et monte la landing si l'URL contient
+// `?qr=<variant>` (étudiant / concours / professeur / marketing).
+if (typeof window !== "undefined") {
+  window.MindPrepEnterGuest = function () {
+    if (!isGuestMode) enterGuestMode({ silent: true });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });
+  };
+}
+import("./core/qr-system/index.js")
+  .then((mod) => {
+    if (mod && typeof mod.autoInitQrLanding === "function") mod.autoInitQrLanding();
+  })
+  .catch((err) => {
+    console.warn("[MindPrep] QR system not loaded:", err);
+  });
+
 // Landing page premium : CTA « Commencer gratuitement » / « Accéder à MindPrep ».
 // Au clic, on entre en mode invité (sans Supabase) et on révèle l'app shell.
 // « Voir une démonstration » scrolle vers la section démo de la landing.

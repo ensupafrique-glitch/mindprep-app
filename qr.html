@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindPrep · Studio QR Code premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
+    <style>
+      :root{
+        --bg:#f5f7ff;--ink:#0b1020;--muted:#5b6478;--accent:#5b5cff;--accent2:#8b5cf6;
+        --card:#fff;--border:rgba(15,23,42,.08);--shadow:0 12px 40px rgba(15,23,42,.08);
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+        font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+      .wrap{max-width:1200px;margin:0 auto;padding:32px 20px 80px;}
+      header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+      .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;}
+      .brand-mark{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;}
+      .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(91,92,255,.12);color:var(--accent);font-weight:700;font-size:12px;}
+      h1{font-size:32px;line-height:1.15;margin:18px 0 10px;}
+      .lead{color:var(--muted);max-width:720px;margin:0 0 24px;}
+      .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--card);
+        border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);}
+      .control{display:flex;flex-direction:column;gap:4px;min-width:180px;}
+      .control label{font-size:12px;font-weight:600;color:var(--muted);}
+      .control select,.control input{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;font:inherit;}
+      .grid{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;}
+      .card{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);}
+      .card .preview{aspect-ratio:720/980;background:#eef2ff;display:flex;align-items:center;justify-content:center;}
+      .card .preview svg{max-width:100%;height:auto;display:block;}
+      .card .meta{padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+      .card .meta strong{font-size:15px;}
+      .card .meta small{color:var(--muted);}
+      .card .actions{display:flex;gap:8px;padding:0 16px 16px;}
+      .btn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:10px;padding:10px 12px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;color:var(--ink);}
+      .btn.primary{background:linear-gradient(135deg,#5b5cff,#8b5cf6);color:#fff;border-color:transparent;}
+      .btn.primary:hover{filter:brightness(1.05);}
+      .info{background:#fff;border:1px dashed var(--border);border-radius:14px;padding:16px;margin-top:24px;color:var(--muted);font-size:14px;line-height:1.5;}
+      code{background:rgba(91,92,255,.08);padding:1px 6px;border-radius:6px;font-size:13px;color:var(--accent);}
+      footer{margin-top:48px;color:var(--muted);font-size:13px;text-align:center;}
+      @media (max-width:520px){h1{font-size:26px;}}
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span>MindPrep</span>
+        </div>
+        <span class="pill">Studio QR · usage interne / marketing</span>
+      </header>
+
+      <h1>Studio QR Code premium</h1>
+      <p class="lead">
+        Génère, télécharge et imprime les QR Codes MindPrep par variante (étudiant,
+        concours, professeur, marketing) en thème clair ou sombre. Chaque QR est
+        scannable sur mobile et envoie l’utilisateur sur la
+        <strong>landing post-scan adaptée</strong>.
+      </p>
+
+      <section class="controls" aria-label="Filtres">
+        <div class="control">
+          <label for="variantFilter">Variante</label>
+          <select id="variantFilter">
+            <option value="all">Toutes</option>
+            <option value="student">🎓 Étudiant</option>
+            <option value="exam">🏅 Concours</option>
+            <option value="teacher">👩‍🏫 Professeur</option>
+            <option value="marketing">✨ Marketing</option>
+            <option value="default">🧠 Default</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="themeFilter">Thème</label>
+          <select id="themeFilter">
+            <option value="all">Clair + Sombre</option>
+            <option value="light">Clair</option>
+            <option value="dark">Sombre</option>
+          </select>
+        </div>
+        <div class="control" style="flex:1;min-width:240px;">
+          <label for="targetUrl">URL cible encodée (lecture seule, vient de qr-config.js)</label>
+          <input id="targetUrl" type="text" readonly />
+        </div>
+      </section>
+
+      <section class="grid" id="grid"></section>
+
+      <div class="info">
+        <strong>Domaine d’affichage vs domaine cible.</strong>
+        Par défaut, le QR encode l’URL d’hébergement courante mais affiche
+        <code>app.mindprep.ai</code> sous le visuel. Pour basculer sur
+        <code>app.mindprep.ai</code> en cible réelle (une fois le DNS configuré), modifie
+        <code>core/qr-system/qr-config.js</code> :
+        passe <code>useDisplayAsTarget</code> à <code>true</code>, puis relance
+        <code>node core/qr-system/generate-assets.mjs</code>. Voir aussi
+        <code>docs/13-qr-system.md</code>.
+      </div>
+
+      <footer>MindPrep · Studio QR · Généré côté client (aucune donnée envoyée).</footer>
+    </main>
+
+    <script type="module">
+      import { renderQrSvg, QR_CONFIG, listVariants, resolveScanUrl } from './core/qr-system/index.js';
+
+      const grid = document.getElementById('grid');
+      const variantFilter = document.getElementById('variantFilter');
+      const themeFilter = document.getElementById('themeFilter');
+      const targetUrl = document.getElementById('targetUrl');
+      targetUrl.value = resolveScanUrl('default');
+
+      function downloadSvg(name, svg) {
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+
+      function downloadPng(name, svgEl) {
+        const xml = new XMLSerializer().serializeToString(svgEl);
+        const svg64 = btoa(unescape(encodeURIComponent(xml)));
+        const img = new Image();
+        img.onload = () => {
+          const W = 1440, H = 1960;
+          const cv = document.createElement('canvas');
+          cv.width = W; cv.height = H;
+          const ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0, W, H);
+          cv.toBlob((b) => {
+            const url = URL.createObjectURL(b);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+          }, 'image/png');
+        };
+        img.src = 'data:image/svg+xml;base64,' + svg64;
+      }
+
+      function buildCard(variantKey, theme) {
+        const v = QR_CONFIG.variants[variantKey];
+        const svg = renderQrSvg({ variant: variantKey, theme });
+        const wrap = document.createElement('article');
+        wrap.className = 'card';
+        wrap.innerHTML = `
+          <div class="preview">${svg}</div>
+          <div class="meta">
+            <strong>${v.emoji} ${v.label} · ${theme === 'light' ? 'Clair' : 'Sombre'}</strong>
+            <small>Cible : ${resolveScanUrl(variantKey)}</small>
+          </div>
+          <div class="actions">
+            <button class="btn primary" data-svg>Télécharger SVG</button>
+            <button class="btn" data-png>Télécharger PNG</button>
+          </div>
+        `;
+        const svgEl = wrap.querySelector('svg');
+        const filename = `mindprep-qr-${variantKey}-${theme}`;
+        wrap.querySelector('[data-svg]').addEventListener('click', () => downloadSvg(`${filename}.svg`, svg));
+        wrap.querySelector('[data-png]').addEventListener('click', () => downloadPng(`${filename}.png`, svgEl));
+        return wrap;
+      }
+
+      function render() {
+        const vSel = variantFilter.value;
+        const tSel = themeFilter.value;
+        const variants = vSel === 'all'
+          ? Object.keys(QR_CONFIG.variants)
+          : [vSel];
+        const themes = tSel === 'all' ? ['light', 'dark'] : [tSel];
+        grid.innerHTML = '';
+        for (const v of variants) for (const t of themes) grid.appendChild(buildCard(v, t));
+      }
+
+      variantFilter.addEventListener('change', render);
+      themeFilter.addEventListener('change', render);
+      render();
+    </script>
+  </body>
+</html>

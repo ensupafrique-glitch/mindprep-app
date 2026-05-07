@@ -18,6 +18,8 @@ pratique ciblee sur les vrais points faibles.
 - `api/` : contrat REST initial.
 - `data/` : modele de donnees et contenu pedagogique.
 - `roadmap/` : MVP, backlog et priorites.
+- `core/qr-system/` : système QR Code premium (visuels SVG clair/sombre, landing post-scan, analytics). Voir [`docs/13-qr-system.md`](docs/13-qr-system.md). Studio interne : [`qr.html`](qr.html).
+- `assets/qr/` : QR pré-générés (étudiant, concours, professeur, marketing × clair/sombre).
 
 ## Lancer le frontend
 

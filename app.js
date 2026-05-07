@@ -2619,6 +2619,8 @@ function applyLandingCurrency(currency) {
     b.setAttribute("aria-checked", active ? "true" : "false");
   });
   landingPriceTargets.forEach((el) => {
+    // Ne pas injecter le tarif dans les spans Premium tant qu'ils ne sont pas révélés.
+    if (el.classList.contains("landing-plan-price-value") && el.hidden) return;
     const label = el.dataset[landingCurrency.toLowerCase()];
     if (label) el.textContent = label;
   });
@@ -2639,7 +2641,10 @@ document.querySelectorAll("[data-landing-reveal]").forEach((btn) => {
     const placeholder = reveal.querySelector(".landing-plan-price-placeholder");
     const value = reveal.querySelector(".landing-plan-price-value");
     if (placeholder) placeholder.hidden = true;
-    if (value) value.hidden = false;
+    if (value) {
+      value.hidden = false;
+      value.removeAttribute("aria-hidden");
+    }
     // S'assure que la devise active est bien appliquée juste après la révélation
     applyLandingCurrency(landingCurrency);
     btn.classList.add("is-hidden");

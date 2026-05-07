@@ -954,7 +954,7 @@ function applyUser(user) {
   userLevel.textContent = isGuestMode ? "Mode invité" : profile.level;
   userAvatar.textContent = firstName.charAt(0).toUpperCase();
   // Sidebar : on garde un libellé neutre cohérent quelle que soit la filière.
-  examContext.textContent = "Coach IA";
+  examContext.textContent = "Assistant Coach";
   examCountdown.textContent = profile.countdown;
 
   // Premium dashboard bindings : welcome + topbar user
@@ -2620,11 +2620,11 @@ const planFeatures = {
   free: ["3 cours / mois", "Mini-tests limités", "Correction sommaire", "Historique limité"],
   student: [
     "Résumés &amp; analyses illimités",
-    "Sujets IA illimités (5 niveaux)",
-    "Correction IA détaillée fond + forme",
+    "Assistant Sujets illimités (5 niveaux)",
+    "Assistant Correction détaillée fond + forme",
     "Progression intelligente &amp; adaptative",
     "Téléchargement PDF / Word",
-    "Coach IA &amp; conseils stratégiques",
+    "Assistant Coach &amp; conseils stratégiques",
   ],
   teacher: [
     "Correction massive de copies",
@@ -2765,7 +2765,7 @@ function initiateCreditsPurchase(pack, method) {
         `Analyser un cours : 1 crédit`,
         `Sujet difficile : 2 crédits`,
         `Correction d'une copie : 3 crédits`,
-        `Coach IA personnalisé (15 min) : 2 crédits`,
+        `Assistant Coach personnalisé (15 min) : 2 crédits`,
       ]
         .map((f) => `<li>✓ ${f}</li>`)
         .join("");
@@ -3105,7 +3105,7 @@ function renderTopicsList() {
     `).join("") + (lockedCount > 0 ? `
       <article class="topic-card topic-locked">
         <h4>🔒 ${lockedCount} sujet${lockedCount > 1 ? "s" : ""} réservé${lockedCount > 1 ? "s" : ""} au Premium</h4>
-        <p>Passe en Premium pour débloquer tous les niveaux, la correction détaillée et la progression IA.</p>
+        <p>Passe en Premium pour débloquer tous les niveaux, la correction détaillée et la progression assistée.</p>
         <button class="primary-button" type="button" id="topicsLockedUpgrade">Voir les offres</button>
       </article>` : "");
 
@@ -3247,7 +3247,7 @@ function showCorrectionResult(copy) {
   if (!isPremiumTier()) {
     document.querySelector("#resultStrengths").innerHTML = `<li>${r.strengths[0] || "Bon début, continue !"}</li>`;
     document.querySelector("#resultWeaknesses").innerHTML = `<li>🔒 Détails complets réservés au Premium.</li>`;
-    document.querySelector("#resultAdvice").innerHTML = `<li>🔒 Conseils IA détaillés réservés au Premium.</li>`;
+    document.querySelector("#resultAdvice").innerHTML = `<li>🔒 Conseils Assistant détaillés réservés au Premium.</li>`;
   } else {
     document.querySelector("#resultStrengths").innerHTML = ul(r.strengths);
     document.querySelector("#resultWeaknesses").innerHTML = ul(r.weaknesses);

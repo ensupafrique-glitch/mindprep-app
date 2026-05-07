@@ -90,7 +90,7 @@ const titles = {
   diagnostic: "Diagnostic",
   practice: "Mini-test",
   copies: "Copies à corriger",
-  presentation: "Exposé intelligent",
+  presentation: "Exposé intelligent IA",
   training: "Entraînement intelligent",
   courses: "La compréhension facilitée du Cours",
   review: "Corrections",
@@ -2655,6 +2655,10 @@ function openPaywall(plan = "student") {
   selectedCredits = null;
   applyCurrency(selectedCurrency);
   paywallModal.classList.remove("is-hidden");
+}
+
+if (typeof window !== "undefined") {
+  window.openPaywall = openPaywall;
 }
 
 function closePaywall() {

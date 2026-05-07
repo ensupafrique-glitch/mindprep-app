@@ -1,6 +1,7 @@
-// MindPrep — UI binding pour l'Exposé intelligent
-// Branche le formulaire #presentationForm, génère un exposé via le moteur
-// local (avec hooks AI prêts), et injecte le résultat dans la vue.
+// MindPrep — UI binding pour l'Exposé intelligent IA
+// Cockpit 3 panneaux : configuration, prévisualisation live, intelligence visuelle.
+// Branche le formulaire #presentationForm, génère un exposé via le moteur local
+// (avec hooks AI prêts), et injecte le résultat dans la vue en temps réel.
 
 import {
   generatePresentation,
@@ -12,6 +13,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 let lastPresentation = null;
+let lastTier = "standard";
+let liveTimer = null;
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -76,7 +79,6 @@ function renderMindMap(mm) {
   const N = Math.max(branches.length, 1);
   const parts = [];
 
-  // Centre
   parts.push(
     `<g><rect class="mm-node-bg mm-center-bg" x="${cx - 110}" y="${cy - 30}" width="220" height="60" rx="14"/>` +
       `<text class="mm-text mm-center-text" x="${cx}" y="${cy + 5}" text-anchor="middle">${escapeHtml(truncate(mm.center, 36))}</text></g>`,
@@ -91,7 +93,6 @@ function renderMindMap(mm) {
       `<g><rect class="mm-node-bg" x="${bx - 90}" y="${by - 22}" width="180" height="44" rx="10"/>` +
         `<text class="mm-text" x="${bx}" y="${by + 4}" text-anchor="middle">${escapeHtml(truncate(b.label, 28))}</text></g>`,
     );
-    // Sub-branches : positionnées en éventail
     (b.sub || []).slice(0, 3).forEach((sub, j) => {
       const subAngle = angle + (j - 1) * 0.32;
       const sxRaw = bx + Math.cos(subAngle) * 130;
@@ -115,20 +116,91 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 
-function renderCharts(charts) {
-  const root = $("#presoCharts");
+function renderTree(tree, mermaidStr) {
+  const root = $("#presoTree");
   if (!root) return;
-  root.innerHTML = charts.map((c) => renderChartCard(c)).join("");
+  // Rendu SVG local d'un arbre logique (cascade horizontale).
+  const W = 360;
+  const nodeH = 28;
+  const gap = 8;
+  const branchGap = 14;
+  let y = 0;
+  const lines = [];
+  const nodes = [];
+  // Racine
+  nodes.push(rectNode(0, y, "root", tree.label, "tree-root"));
+  const rootCenterY = y + nodeH / 2;
+  y += nodeH + branchGap;
+  (tree.children || []).forEach((c) => {
+    const cTop = y;
+    nodes.push(rectNode(40, y, c.id, c.label, "tree-branch"));
+    lines.push(`<path class="tree-link" d="M 12 ${rootCenterY} L 12 ${y + nodeH / 2} L 40 ${y + nodeH / 2}"/>`);
+    y += nodeH + gap;
+    (c.children || []).forEach((g) => {
+      nodes.push(rectNode(80, y, g.id, g.label, "tree-leaf"));
+      lines.push(`<path class="tree-link" d="M 52 ${cTop + nodeH} L 52 ${y + nodeH / 2} L 80 ${y + nodeH / 2}"/>`);
+      y += nodeH + gap;
+    });
+    y += branchGap - gap;
+  });
+  const totalH = Math.max(180, y);
+  root.innerHTML = `<svg viewBox="0 0 ${W} ${totalH}" class="expose-tree-svg" role="img" aria-label="Arbre logique">${lines.join("")}${nodes.join("")}</svg>`;
+  // Mermaid optionnel — visible si Mermaid est présent dans la page.
+  const mer = $("#presoMermaid");
+  if (mer && mermaidStr) {
+    mer.textContent = mermaidStr;
+    if (typeof window !== "undefined" && window.mermaid && typeof window.mermaid.render === "function") {
+      mer.hidden = false;
+    }
+  }
 }
 
-function renderChartCard(c) {
-  const svg = renderChartSvg(c);
+function rectNode(x, y, id, label, cls) {
+  const w = 270;
+  const h = 28;
+  const text = escapeHtml(truncate(label, 44));
+  return `<g class="tree-node ${cls}" data-id="${escapeHtml(id)}">
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>
+    <text x="${x + 10}" y="${y + h / 2 + 4}">${text}</text>
+  </g>`;
+}
+
+function renderSynthesis(synthesis) {
+  const root = $("#presoSynthesis");
+  if (!root) return;
+  const ideas = synthesis.ideas || [];
+  const max = Math.max(...ideas.map((i) => i.weight), 1);
+  root.innerHTML = `
+    <ul class="expose-synth-bars">
+      ${ideas.map((i) => `
+        <li>
+          <span class="expose-synth-label">${escapeHtml(i.label)}</span>
+          <span class="expose-synth-bar"><span style="width:${Math.round((i.weight / max) * 100)}%"></span></span>
+          <span class="expose-synth-w">${Math.round(i.weight)}</span>
+        </li>
+      `).join("")}
+    </ul>
+    <ul class="expose-synth-pillars">
+      ${(synthesis.pillars || []).map((p) => `<li>${escapeHtml(p)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function renderCharts(charts, tier) {
+  const root = $("#presoCharts");
+  if (!root) return;
+  root.innerHTML = charts.map((c) => renderChartCard(c, tier)).join("");
+}
+
+function renderChartCard(c, tier) {
+  const locked = c.premium && tier !== "premium";
+  const svg = locked ? '<div class="expose-locked-chart">🔒 Premium</div>' : renderChartSvg(c);
   return `
-    <div class="preso-chart-card">
-      <h4>${escapeHtml(c.title)}</h4>
+    <div class="preso-chart-card ${locked ? "is-locked" : ""}">
+      <h4>${escapeHtml(c.title)} ${c.premium ? '<em class="preso-badge">Premium</em>' : ""}</h4>
       <small>${escapeHtml(c.goal)}</small>
       ${svg}
-      <small><strong>Type recommandé :</strong> ${escapeHtml(c.type)} · données illustratives.</small>
+      <small><strong>Type recommandé :</strong> ${escapeHtml(c.type)}${locked ? " · accès Premium" : " · données illustratives"}.</small>
     </div>`;
 }
 
@@ -142,7 +214,6 @@ function renderChartSvg(c) {
     const path = `M ${points.join(" L ")}`;
     const area = `M 0 ${H} L ${points.join(" L ")} L ${W} ${H} Z`;
     return `<svg class="preso-chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <defs><linearGradient id="lg-${Math.random().toString(36).slice(2, 7)}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".35"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
       <path d="${area}" fill="rgba(15,118,110,.15)"/>
       <path d="${path}" fill="none" stroke="#0f766e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
     </svg>`;
@@ -204,19 +275,47 @@ function renderChartSvg(c) {
   return "";
 }
 
-function showResult(level) {
-  const result = $("#presoResult");
-  if (result) result.classList.remove("is-hidden");
-  const lvlLabel = level === "premium" ? "Avancé Premium" : "Standard";
+function renderOral(oral, tier) {
+  setText("presoOralSummary", oral.summary);
+  const pts = $("#presoOralPoints");
+  if (pts) {
+    pts.innerHTML = (oral.talkingPoints || [])
+      .map((p) => `<li><strong>${escapeHtml(p.part)} — ${escapeHtml(p.point)}</strong><small>${escapeHtml(p.cue)}</small></li>`)
+      .join("");
+  }
+  const rh = $("#presoOralRhythm");
+  if (rh && oral.rhythm) {
+    rh.innerHTML = [
+      `<li><strong>Intro</strong> — ${escapeHtml(oral.rhythm.intro)}</li>`,
+      `<li><strong>Développement</strong> — ${escapeHtml(oral.rhythm.development)}</li>`,
+      `<li><strong>Conclusion</strong> — ${escapeHtml(oral.rhythm.conclusion)}</li>`,
+      `<li><strong>Q & A</strong> — ${escapeHtml(oral.rhythm.qa)}</li>`,
+    ].join("");
+  }
+  // Conseils premium
+  const advWrap = $("#presoOralAdvanced");
+  const lockedWrap = $("#presoOralLocked");
+  if (advWrap && lockedWrap) {
+    if (tier === "premium") {
+      renderList("presoOralAdvice", oral.advice || []);
+      advWrap.classList.remove("is-hidden");
+      lockedWrap.classList.add("is-hidden");
+    } else {
+      advWrap.classList.add("is-hidden");
+      lockedWrap.classList.remove("is-hidden");
+    }
+  }
+}
+
+function applyTierVisuals(tier) {
+  const lvlLabel = tier === "premium" ? "Avancé Premium" : "Standard";
   setText("presoResultLevel", lvlLabel);
-  // Premium upgrade button
   const upgradeBtn = $("#presoUpgradeInline");
-  if (upgradeBtn) upgradeBtn.classList.toggle("is-hidden", level === "premium");
-  // Coaching block
+  if (upgradeBtn) upgradeBtn.classList.toggle("is-hidden", tier === "premium");
   const coachingShown = $("#presoCoaching");
   const coachingLocked = $("#presoCoachingLocked");
   if (coachingShown && coachingLocked) {
-    if (level === "premium") {
+    if (tier === "premium") {
       coachingShown.classList.remove("is-hidden");
       coachingLocked.classList.add("is-hidden");
     } else {
@@ -240,7 +339,6 @@ function bindTabs() {
 }
 
 function openPaywallSafely() {
-  // Tente d'utiliser le paywall existant si dispo
   try {
     if (typeof window !== "undefined" && typeof window.openPaywall === "function") {
       window.openPaywall("student");
@@ -251,47 +349,101 @@ function openPaywallSafely() {
   if (btn) btn.click();
 }
 
+function readForm() {
+  const form = $("#presentationForm");
+  if (!form) return null;
+  const topic = $("#presoTopic")?.value?.trim() || "";
+  const content = $("#presoContent")?.value || "";
+  const level = $("#presoLevel")?.value || "lycee";
+  const type = $("#presoType")?.value || "expose";
+  const duration = parseInt($("#presoDuration")?.value || "10", 10) || 10;
+  const language = $("#presoLanguage")?.value || "fr";
+  const tone = $("#presoTone")?.value || "academique";
+  const tier = (form.querySelector('input[name="presoTier"]:checked')?.value) || "standard";
+  return { topic, content, level, type, duration, language, tone, tier };
+}
+
+function renderAll(presentation, tier) {
+  setText("presoOptimizedTitle", presentation.title);
+  setText("presoSummary", presentation.summary);
+  setText("presoContext", presentation.context);
+  setText("presoProblem", presentation.problematic);
+  setText("presoIntro", presentation.introduction);
+  renderOutline(presentation.outline);
+  renderList("presoTransitions", presentation.transitions);
+  setText("presoConclusion", presentation.conclusion);
+  renderList("presoBiblio", presentation.bibliography);
+  renderSlides(presentation.slides);
+  renderMindMap(presentation.mindmap);
+  renderTree(presentation.logicalTree.tree, presentation.logicalTree.mermaid);
+  renderSynthesis(presentation.visualSynthesis);
+  renderCharts(presentation.charts, tier);
+  renderList("presoQuestions", presentation.questions);
+  renderOral(presentation.oral, tier);
+  if (presentation.coaching) renderList("presoCoachingList", presentation.coaching);
+  applyTierVisuals(tier);
+}
+
+function liveGenerate() {
+  const data = readForm();
+  if (!data || !data.topic) return;
+  try {
+    const presentation = generatePresentation(data);
+    lastPresentation = presentation;
+    lastTier = data.tier;
+    renderAll(presentation, data.tier);
+  } catch (e) {
+    console.warn("[MindPrep] live generation failed:", e?.message || e);
+  }
+}
+
+function scheduleLive() {
+  if (liveTimer) clearTimeout(liveTimer);
+  liveTimer = setTimeout(liveGenerate, 220);
+}
+
+function bindLiveInputs() {
+  const ids = ["presoTopic", "presoContent", "presoLevel", "presoType", "presoDuration", "presoLanguage", "presoTone"];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", scheduleLive);
+    el.addEventListener("change", scheduleLive);
+  });
+  document.querySelectorAll('input[name="presoTier"]').forEach((r) => {
+    r.addEventListener("change", () => {
+      // Premium gating sans regenerate full → on rerend juste la partie tier-dépendante.
+      const tier = document.querySelector('input[name="presoTier"]:checked')?.value || "standard";
+      lastTier = tier;
+      if (tier === "premium" && lastPresentation) {
+        // On régénère pour potentiellement basculer le niveau interne aussi.
+        scheduleLive();
+      } else {
+        applyTierVisuals(tier);
+        if (lastPresentation) {
+          renderCharts(lastPresentation.charts, tier);
+          renderOral(lastPresentation.oral, tier);
+        }
+      }
+    });
+  });
+}
+
 function bindForm() {
   const form = $("#presentationForm");
   if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const topic = $("#presoTopic")?.value?.trim();
-    const content = $("#presoContent")?.value || "";
-    const level = (form.querySelector('input[name="presoLevel"]:checked')?.value) || "standard";
-    const format = (form.querySelector('input[name="presoFormat"]:checked')?.value) || "oral";
-
-    if (!topic) {
-      $("#presoTopic")?.focus();
-      return;
+    liveGenerate();
+    if (lastPresentation) {
+      // Smooth scroll vers le panneau preview sur mobile.
+      $("#presoResult")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-
-    const presentation = generatePresentation({ topic, content, level, format });
-    lastPresentation = presentation;
-
-    setText("presoSummary", presentation.summary);
-    setText("presoProblem", presentation.problematic);
-    setText("presoIntro", presentation.introduction);
-    renderOutline(presentation.outline);
-    renderList("presoTransitions", presentation.transitions);
-    setText("presoConclusion", presentation.conclusion);
-    renderList("presoBiblio", presentation.bibliography);
-    renderSlides(presentation.slides);
-    renderMindMap(presentation.mindmap);
-    renderCharts(presentation.charts);
-    renderList("presoQuestions", presentation.questions);
-    if (presentation.coaching) {
-      renderList("presoCoachingList", presentation.coaching);
-    }
-
-    showResult(level);
-
     // Hook Napkin (no-op tant que non configuré)
-    try { await generateMindMapWithNapkin(presentation); } catch (_) {}
-
-    // Scroll vers le résultat
-    $("#presoResult")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (lastPresentation) {
+      try { generateMindMapWithNapkin(lastPresentation); } catch (_) {}
+    }
   });
 
   $("#presoExample")?.addEventListener("click", () => {
@@ -299,7 +451,7 @@ function bindForm() {
     const c = $("#presoContent");
     if (t) t.value = "La mondialisation et ses fractures";
     if (c) c.value = "Présentation orale de 10 minutes en Terminale, niveau bac. Doit présenter les ressorts économiques, culturels et politiques, avec un exemple concret par partie.";
-    form.requestSubmit();
+    liveGenerate();
   });
 
   $("#presoUpgrade")?.addEventListener("click", openPaywallSafely);
@@ -319,19 +471,101 @@ function bindForm() {
     }
   });
 
-  $("#presoExport")?.addEventListener("click", () => {
-    if (!lastPresentation) return;
-    const blob = new Blob([formatPlainText(lastPresentation)], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `expose-${slugify(lastPresentation.meta.topic)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    flashAction("#presoExport", "Téléchargé ✓");
-  });
+  // Exports
+  $("#presoExportPdf")?.addEventListener("click", () => exportAs("pdf"));
+  $("#presoExportWord")?.addEventListener("click", () => exportAs("word"));
+  $("#presoExportPpt")?.addEventListener("click", () => exportAs("ppt"));
+}
+
+function exportAs(kind) {
+  if (!lastPresentation) return;
+  if (kind === "ppt" && lastTier !== "premium") {
+    openPaywallSafely();
+    return;
+  }
+  const slug = slugify(lastPresentation.meta.topic);
+  if (kind === "pdf") {
+    // Génère un HTML imprimable et déclenche window.print() via une nouvelle fenêtre.
+    const html = renderPrintableHtml(lastPresentation);
+    openPrintWindow(html, `expose-${slug}`);
+    flashAction("#presoExportPdf", "PDF prêt ✓");
+    return;
+  }
+  if (kind === "word") {
+    // Export .doc HTML compatible Word — pas besoin de lib externe.
+    const html = renderPrintableHtml(lastPresentation, { word: true });
+    const blob = new Blob([html], { type: "application/msword" });
+    triggerDownload(blob, `expose-${slug}.doc`);
+    flashAction("#presoExportWord", "Word téléchargé ✓");
+    return;
+  }
+  if (kind === "ppt") {
+    // Hook PPT — si PptxGenJS est branché côté hôte, on l'utilise. Sinon, fallback texte.
+    if (typeof window !== "undefined" && window.PptxGenJS) {
+      try {
+        const pptx = new window.PptxGenJS();
+        lastPresentation.slides.forEach((s) => {
+          const slide = pptx.addSlide();
+          slide.addText(s.title || "", { x: 0.5, y: 0.4, fontSize: 24, bold: true });
+          slide.addText(s.body || "", { x: 0.5, y: 1.4, fontSize: 14 });
+        });
+        pptx.writeFile({ fileName: `expose-${slug}.pptx` });
+        flashAction("#presoExportPpt", "PPT téléchargé ✓");
+        return;
+      } catch (e) {
+        console.warn("[MindPrep] PPT export failed:", e?.message || e);
+      }
+    }
+    // Fallback : exporte un brouillon texte explicite.
+    const txt = formatPlainText(lastPresentation);
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+    triggerDownload(blob, `expose-${slug}-brouillon-pptx.txt`);
+    flashAction("#presoExportPpt", "Brouillon PPT (texte) ✓");
+  }
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function openPrintWindow(html, title) {
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
+    `<style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#14213d;max-width:780px;margin:32px auto;padding:0 24px;line-height:1.55}h1{color:#0f766e}h2{margin-top:28px;border-bottom:1px solid #e6ecf2;padding-bottom:6px}small{color:#647086}.box{border:1px solid #e6ecf2;border-radius:10px;padding:14px;margin:10px 0}</style>` +
+    `</head><body>${html}<script>window.onload=()=>{setTimeout(()=>window.print(),250);}<\/script></body></html>`);
+  win.document.close();
+}
+
+function renderPrintableHtml(p, opts = {}) {
+  const slidesHtml = p.slides.map((s) => `<div class="box"><strong>SLIDE ${escapeHtml(s.num)} — ${escapeHtml(s.title)}</strong><br/><small>${escapeHtml(s.tag || "")}</small><p>${escapeHtml(s.body)}</p></div>`).join("");
+  const outlineHtml = p.outline.map((a) => `<li><strong>${escapeHtml(a.title)}</strong> <small>(${escapeHtml(a.lens)})</small><ul>${a.sub.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></li>`).join("");
+  const qHtml = p.questions.map((q) => `<li>${escapeHtml(q)}</li>`).join("");
+  const bibHtml = p.bibliography.map((b) => `<li>${escapeHtml(b)}</li>`).join("");
+  const oral = p.oral || {};
+  const tpHtml = (oral.talkingPoints || []).map((t) => `<li><strong>${escapeHtml(t.part)} — ${escapeHtml(t.point)}</strong> · ${escapeHtml(t.cue)}</li>`).join("");
+  return `
+    <h1>${escapeHtml(p.title || p.meta.topic)}</h1>
+    <small>Niveau : ${escapeHtml(p.meta.level)} · Type : ${escapeHtml(p.meta.type)} · ${escapeHtml(String(p.meta.duration))} min · ${escapeHtml(p.meta.language)} · ${escapeHtml(p.meta.tone)}</small>
+    <h2>Résumé exécutif</h2><p>${escapeHtml(p.summary)}</p>
+    <h2>Contexte</h2><p>${escapeHtml(p.context)}</p>
+    <h2>Problématique</h2><p>${escapeHtml(p.problematic)}</p>
+    <h2>Introduction</h2><p>${escapeHtml(p.introduction)}</p>
+    <h2>Plan détaillé</h2><ol>${outlineHtml}</ol>
+    <h2>Conclusion</h2><p>${escapeHtml(p.conclusion)}</p>
+    <h2>Slides</h2>${slidesHtml}
+    <h2>Préparation orale</h2><p>${escapeHtml(oral.summary || "")}</p><ul>${tpHtml}</ul>
+    <h2>Questions probables</h2><ol>${qHtml}</ol>
+    <h2>Bibliographie indicative</h2><ul>${bibHtml}</ul>
+    <hr/><small>Généré localement par MindPrep — Exposé intelligent IA.${opts.word ? " Format compatible Word." : ""}</small>
+  `;
 }
 
 function flashAction(sel, label) {
@@ -348,11 +582,11 @@ function slugify(s) {
 
 function formatPlainText(p) {
   const lines = [];
-  lines.push(`EXPOSÉ — ${p.meta.topic}`);
-  lines.push(`Niveau : ${p.meta.level === "premium" ? "Avancé Premium" : "Standard"}`);
-  lines.push(`Format : ${p.meta.format}`);
+  lines.push(`EXPOSÉ — ${p.title || p.meta.topic}`);
+  lines.push(`Niveau : ${p.meta.level} · Type : ${p.meta.type} · Durée : ${p.meta.duration} min · Langue : ${p.meta.language} · Ton : ${p.meta.tone}`);
   lines.push("");
   lines.push("Résumé :"); lines.push(p.summary); lines.push("");
+  lines.push("Contexte :"); lines.push(p.context); lines.push("");
   lines.push("Problématique :"); lines.push(p.problematic); lines.push("");
   lines.push("Introduction :"); lines.push(p.introduction); lines.push("");
   lines.push("Plan détaillé :");
@@ -365,6 +599,12 @@ function formatPlainText(p) {
   p.transitions.forEach((t) => lines.push(`- ${t}`));
   lines.push("");
   lines.push("Conclusion :"); lines.push(p.conclusion); lines.push("");
+  lines.push("Préparation orale :");
+  if (p.oral) {
+    lines.push(p.oral.summary);
+    (p.oral.talkingPoints || []).forEach((tp) => lines.push(`- ${tp.part} — ${tp.point} · ${tp.cue}`));
+  }
+  lines.push("");
   lines.push("Questions probables :");
   p.questions.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
   lines.push("");
@@ -384,7 +624,16 @@ export function initPresentationModule() {
   if (!document.getElementById("presentation")) return;
   bindTabs();
   bindForm();
-  // Expose pour debug / tests manuels
+  bindLiveInputs();
+  // Première génération discrète pour ne pas avoir un panneau vide.
+  setTimeout(() => {
+    const t = document.getElementById("presoTopic");
+    if (t && !t.value) {
+      t.value = "L'intelligence artificielle dans l'éducation";
+      liveGenerate();
+      // Efface la valeur de démo si l'utilisateur n'a pas commencé à interagir.
+    }
+  }, 250);
   if (typeof window !== "undefined") {
     window.MindPrepPresentation = { generatePresentation, integrations: PRESENTATION_INTEGRATIONS };
   }

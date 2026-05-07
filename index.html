@@ -436,11 +436,21 @@
           <h2 id="pricingTitle">Plans Premium</h2>
           <p>Démarre gratuitement. Passe au Premium quand tu es prêt — sans engagement.</p>
         </div>
+
+        <div class="landing-currency" role="group" aria-label="Devise d'affichage des prix">
+          <span class="landing-currency-label">Afficher les prix en :</span>
+          <div class="landing-currency-toggle" role="radiogroup">
+            <button class="landing-currency-btn active" type="button" role="radio" aria-checked="true" data-landing-currency="FCFA">FCFA</button>
+            <button class="landing-currency-btn" type="button" role="radio" aria-checked="false" data-landing-currency="EUR">EUR (€)</button>
+          </div>
+          <span class="landing-currency-hint">Paiement en FCFA (Wave, Orange Money, Free Money) ou en euros par carte (Stripe / PayPal).</span>
+        </div>
+
         <div class="landing-plans">
           <article class="landing-plan">
             <h3>Gratuit</h3>
             <p class="landing-plan-tag">Découverte</p>
-            <p class="landing-plan-price">0 FCFA</p>
+            <p class="landing-plan-price" data-landing-price data-fcfa="0 FCFA" data-eur="0 €">0 FCFA</p>
             <ul>
               <li>3 cours / mois</li>
               <li>Mini-tests limités</li>
@@ -449,30 +459,38 @@
             </ul>
             <button class="landing-cta-secondary" type="button" data-landing-enter>Commencer</button>
           </article>
-          <article class="landing-plan landing-plan--featured">
+          <article class="landing-plan landing-plan--featured" data-landing-plan-card="student" data-price-revealed="false">
             <span class="landing-plan-badge">Le plus populaire</span>
             <h3>Premium Étudiant</h3>
             <p class="landing-plan-tag">Révision avancée</p>
-            <p class="landing-plan-price">3 000 – 7 000 <small>FCFA / mois</small></p>
+            <p class="landing-plan-price landing-plan-price--hidden" data-landing-price-reveal>
+              <span class="landing-plan-price-placeholder">Tarif disponible après sélection</span>
+              <span class="landing-plan-price-value" data-landing-price data-fcfa="1 500 – 3 500 FCFA / mois" data-eur="≈ 2,30 – 5,30 € / mois" hidden>1 500 – 3 500 FCFA / mois</span>
+            </p>
             <ul>
               <li>Cours et mini-tests illimités</li>
               <li>Assistant Correction détaillée</li>
               <li>Plan de révision personnalisé</li>
               <li>Assistant Coach et exposés intelligents</li>
             </ul>
-            <button class="landing-cta-primary" type="button" data-landing-enter>Essayer Premium</button>
+            <button class="landing-cta-secondary landing-plan-reveal-btn" type="button" data-landing-reveal="student">Voir le tarif</button>
+            <button class="landing-cta-primary landing-plan-cta is-hidden" type="button" data-landing-enter>Essayer Premium</button>
           </article>
-          <article class="landing-plan">
+          <article class="landing-plan" data-landing-plan-card="teacher" data-price-revealed="false">
             <h3>Premium Professeur</h3>
             <p class="landing-plan-tag">Correction et suivi</p>
-            <p class="landing-plan-price">10 000 – 30 000 <small>FCFA / mois</small></p>
+            <p class="landing-plan-price landing-plan-price--hidden" data-landing-price-reveal>
+              <span class="landing-plan-price-placeholder">Tarif disponible après sélection</span>
+              <span class="landing-plan-price-value" data-landing-price data-fcfa="5 000 – 15 000 FCFA / mois" data-eur="≈ 7,60 – 22,90 € / mois" hidden>5 000 – 15 000 FCFA / mois</span>
+            </p>
             <ul>
               <li>Correction massive de copies</li>
               <li>Dashboard élèves</li>
               <li>Statistiques pédagogiques</li>
               <li>Export PDF / DOCX professionnel</li>
             </ul>
-            <button class="landing-cta-secondary" type="button" data-landing-enter>Découvrir</button>
+            <button class="landing-cta-secondary landing-plan-reveal-btn" type="button" data-landing-reveal="teacher">Voir le tarif</button>
+            <button class="landing-cta-secondary landing-plan-cta is-hidden" type="button" data-landing-enter>Découvrir</button>
           </article>
         </div>
       </section>
@@ -1895,7 +1913,7 @@
                 <li>🧠 Assistant Correction détaillée fond + forme sur tes copies</li>
                 <li>⚡ Sujets et entraînement adaptatif (5 niveaux)</li>
                 <li>📄 Exports PDF / Word et historique complet</li>
-                <li>🪙 Ou paie à l'usage : packs de crédits dès 500 FCFA</li>
+                <li>🪙 Ou paie à l'usage : packs de crédits dès 250 FCFA</li>
               </ul>
 
               <button class="primary-button" id="openPaywallBtn" type="button">Voir les offres et payer</button>
@@ -2103,7 +2121,7 @@
           </button>
           <button class="paywall-mode" type="button" role="tab" data-mode="credits">
             <span class="paywall-mode-title">🪙 Crédits</span>
-            <span class="paywall-mode-sub">Paie à l'usage, dès 500 FCFA</span>
+            <span class="paywall-mode-sub">Paie à l'usage, dès 250 FCFA</span>
           </button>
           <button class="paywall-mode" type="button" role="tab" data-mode="business">
             <span class="paywall-mode-title">🏫 Établissement</span>
@@ -2144,11 +2162,14 @@
               <button class="primary-button" type="button" data-select-plan="free">Continuer en gratuit</button>
             </article>
 
-            <article class="paywall-card" data-plan-card="student">
+            <article class="paywall-card" data-plan-card="student" data-paywall-revealable="true" data-price-revealed="false">
               <h3>Premium Étudiant <span class="paywall-badge">Populaire</span></h3>
-              <div class="paywall-price">
-                <strong data-price data-fcfa="3 000 – 7 000 FCFA" data-eur="≈ 5 – 11 €">3 000 – 7 000 FCFA</strong><span>/ mois</span>
-                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 5 – 11 € / mois" data-eur="3 000 – 7 000 FCFA / mois">≈ 5 – 11 € / mois</em>
+              <div class="paywall-price paywall-price--hidden" data-paywall-price-reveal>
+                <span class="paywall-price-placeholder">Tarif disponible après sélection</span>
+                <span class="paywall-price-content" hidden>
+                  <strong data-price data-fcfa="1 500 – 3 500 FCFA" data-eur="≈ 2,30 – 5,30 €">1 500 – 3 500 FCFA</strong><span>/ mois</span>
+                  <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 2,30 – 5,30 € / mois" data-eur="1 500 – 3 500 FCFA / mois">≈ 2,30 – 5,30 € / mois</em>
+                </span>
               </div>
               <p class="paywall-pitch">Pour réussir tes examens et progresser sans limite.</p>
               <ul>
@@ -2164,11 +2185,14 @@
               <p class="paywall-fineprint">Prix exact selon pays / promo. Sans engagement, résiliable à tout moment.</p>
             </article>
 
-            <article class="paywall-card" data-plan-card="teacher">
+            <article class="paywall-card" data-plan-card="teacher" data-paywall-revealable="true" data-price-revealed="false">
               <h3>Premium Professeur</h3>
-              <div class="paywall-price">
-                <strong data-price data-fcfa="10 000 – 30 000 FCFA" data-eur="≈ 15 – 46 €">10 000 – 30 000 FCFA</strong><span>/ mois</span>
-                <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 15 – 46 € / mois" data-eur="10 000 – 30 000 FCFA / mois">≈ 15 – 46 € / mois</em>
+              <div class="paywall-price paywall-price--hidden" data-paywall-price-reveal>
+                <span class="paywall-price-placeholder">Tarif disponible après sélection</span>
+                <span class="paywall-price-content" hidden>
+                  <strong data-price data-fcfa="5 000 – 15 000 FCFA" data-eur="≈ 7,60 – 22,90 €">5 000 – 15 000 FCFA</strong><span>/ mois</span>
+                  <em class="paywall-price-alt" data-price-alt data-fcfa="≈ 7,60 – 22,90 € / mois" data-eur="5 000 – 15 000 FCFA / mois">≈ 7,60 – 22,90 € / mois</em>
+                </span>
               </div>
               <p class="paywall-pitch">Pour les enseignants qui corrigent et suivent des classes.</p>
               <ul>
@@ -2205,29 +2229,29 @@
             <div class="credits-packs">
               <h4>Choisis ton pack</h4>
               <div class="credits-pack-list">
-                <button class="credits-pack" type="button" data-credits-pack="starter" data-amount="500" data-credits="5" data-amount-eur="0.80">
+                <button class="credits-pack" type="button" data-credits-pack="starter" data-amount="250" data-credits="5" data-amount-eur="0.40">
                   <span class="credits-pack-name">Découverte</span>
-                  <span class="credits-pack-price" data-price data-fcfa="500 FCFA" data-eur="≈ 0,80 €">500 FCFA</span>
-                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 0,80 €" data-eur="500 FCFA">≈ 0,80 €</span>
+                  <span class="credits-pack-price" data-price data-fcfa="250 FCFA" data-eur="≈ 0,40 €">250 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 0,40 €" data-eur="250 FCFA">≈ 0,40 €</span>
                   <span class="credits-pack-detail">5 crédits · ~5 cours</span>
                 </button>
-                <button class="credits-pack" type="button" data-credits-pack="basic" data-amount="1000" data-credits="12" data-amount-eur="1.50">
+                <button class="credits-pack" type="button" data-credits-pack="basic" data-amount="500" data-credits="12" data-amount-eur="0.80">
                   <span class="credits-pack-name">Étudiant</span>
-                  <span class="credits-pack-price" data-price data-fcfa="1 000 FCFA" data-eur="≈ 1,50 €">1 000 FCFA</span>
-                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 1,50 €" data-eur="1 000 FCFA">≈ 1,50 €</span>
+                  <span class="credits-pack-price" data-price data-fcfa="500 FCFA" data-eur="≈ 0,80 €">500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 0,80 €" data-eur="500 FCFA">≈ 0,80 €</span>
                   <span class="credits-pack-detail">12 crédits · +20% bonus</span>
                 </button>
-                <button class="credits-pack credits-pack--featured" type="button" data-credits-pack="boost" data-amount="2500" data-credits="35" data-amount-eur="3.80">
+                <button class="credits-pack credits-pack--featured" type="button" data-credits-pack="boost" data-amount="1250" data-credits="35" data-amount-eur="1.90">
                   <span class="credits-pack-badge">Populaire</span>
                   <span class="credits-pack-name">Boost examen</span>
-                  <span class="credits-pack-price" data-price data-fcfa="2 500 FCFA" data-eur="≈ 3,80 €">2 500 FCFA</span>
-                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 3,80 €" data-eur="2 500 FCFA">≈ 3,80 €</span>
+                  <span class="credits-pack-price" data-price data-fcfa="1 250 FCFA" data-eur="≈ 1,90 €">1 250 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 1,90 €" data-eur="1 250 FCFA">≈ 1,90 €</span>
                   <span class="credits-pack-detail">35 crédits · +40% bonus</span>
                 </button>
-                <button class="credits-pack" type="button" data-credits-pack="pro" data-amount="5000" data-credits="80" data-amount-eur="7.60">
+                <button class="credits-pack" type="button" data-credits-pack="pro" data-amount="2500" data-credits="80" data-amount-eur="3.80">
                   <span class="credits-pack-name">Concours</span>
-                  <span class="credits-pack-price" data-price data-fcfa="5 000 FCFA" data-eur="≈ 7,60 €">5 000 FCFA</span>
-                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 7,60 €" data-eur="5 000 FCFA">≈ 7,60 €</span>
+                  <span class="credits-pack-price" data-price data-fcfa="2 500 FCFA" data-eur="≈ 3,80 €">2 500 FCFA</span>
+                  <span class="credits-pack-price-alt" data-price-alt data-fcfa="≈ 3,80 €" data-eur="2 500 FCFA">≈ 3,80 €</span>
                   <span class="credits-pack-detail">80 crédits · +60% bonus</span>
                 </button>
               </div>

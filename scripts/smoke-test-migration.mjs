@@ -126,10 +126,12 @@ async function main() {
   await checkStatus('must', 'Landing (/)', '/');
   await checkStatus('must', 'QR studio (/qr.html)', '/qr.html');
   await checkStatus('should', 'Alias /qr (Vercel rewrite, ignoré sur GH Pages)', '/qr');
-  // Sur GitHub Pages, le fichier CNAME à la racine doit être servi tel quel et
-  // contenir le domaine de marque. Sur Vercel/Netlify, le fichier est ignoré
-  // par l'hébergeur — on rétrograde donc en "should".
-  await checkContains('should', 'CNAME servi (custom domain GitHub Pages)', '/CNAME', [
+  // Sur GitHub Pages, le fichier CNAME à la racine est servi tel quel s'il
+  // existe — mais tant que `domainStatus = 'pending'` dans core/site-config.js,
+  // ce fichier ne doit PAS exister à la racine du repo (il déclencherait une
+  // bascule de custom domain prématurée). Le check reste en "should" : il
+  // signale l'état (présent + bon contenu vs absent), sans bloquer.
+  await checkContains('should', 'CNAME servi (présent uniquement après bascule DNS)', '/CNAME', [
     'app.mindprep.ai',
   ]);
 

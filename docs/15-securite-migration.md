@@ -12,6 +12,13 @@ Ce document complète [`docs/14-vercel-deployment.md`](./14-vercel-deployment.md
 
 ## 1. Principes de sécurité
 
+0. **⛔ Pas de fichier `CNAME` à la racine tant que le DNS n'est pas
+   prêt.** Un `CNAME` mergé sur `main` active automatiquement le
+   *Custom domain* côté GitHub Pages, ce qui peut rendre la fallback
+   URL `*.github.io` injoignable si le DNS ne résout pas encore.
+   Modèle conservé dans
+   [`./domain/CNAME.example`](./domain/CNAME.example) avec les
+   conditions d'activation.
 1. **Aucun changement DNS tant que l'app n'est pas vérifiée sur l'URL
    Vercel `*.vercel.app`.** On ne touche au registrar qu'après validation
    complète sur l'URL temporaire.

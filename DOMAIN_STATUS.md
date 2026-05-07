@@ -5,6 +5,16 @@
 > (`provider`, `domainStatus`). Mettre les deux à jour ensemble lors de
 > chaque étape franchie.
 
+> ⛔ **Garde-fou (mai 2026).** Ne pas committer de fichier `CNAME` à la
+> racine du repo tant que le DNS n'est pas configuré et que la bascule
+> finale n'est pas approuvée. Un commit accidentel a déjà déclenché la
+> bascule automatique côté GitHub Pages alors que le DNS n'était pas
+> prêt — le custom domain a été retiré manuellement via l'API et le
+> fichier supprimé de `main` (commit `9440f74`). Modèle conservé dans
+> [`docs/domain/CNAME.example`](./docs/domain/CNAME.example) avec les
+> conditions d'activation : voir
+> [`docs/domain/README.md`](./docs/domain/README.md).
+
 ## Voie active : GitHub Pages (priorité)
 
 L'utilisateur est bloqué 12 h sur la vérification téléphone Vercel. On
@@ -17,8 +27,9 @@ l'app à <https://ensupafrique-glitch.github.io/mindprep-app/>.
 |--------------------------------------------------|--------------|
 | `mindprep.ai` résout (apex)                      | ✅ — `34.111.179.208` (vérifié) |
 | `app.mindprep.ai` résout                         | ❌ — pas encore de record DNS |
-| Fichier `CNAME` à la racine (= `app.mindprep.ai`)| ✅ — présent dans ce PR |
-| Custom domain saisi dans Settings → Pages        | ⬜ — à faire (humain) |
+| Fichier `CNAME` à la racine (= `app.mindprep.ai`)| ⛔ — **absent volontairement** tant que le DNS n'est pas prêt (cf. garde-fou ci-dessus) |
+| Modèle `docs/domain/CNAME.example` documenté     | ✅ — présent, à copier seulement après DNS validé |
+| Custom domain saisi dans Settings → Pages        | ⬜ — à faire (humain) **uniquement après DNS prêt** |
 | `CNAME app → ensupafrique-glitch.github.io` créé | ⬜ — à faire (registrar) |
 | GitHub *DNS check successful*                    | ⬜ — à attendre |
 | *Enforce HTTPS* coché                            | ⬜ — à faire après check vert |
@@ -28,6 +39,8 @@ l'app à <https://ensupafrique-glitch.github.io/mindprep-app/>.
 
 Hébergement actif (fallback) :
 **`https://ensupafrique-glitch.github.io/mindprep-app/`** — GitHub Pages.
+Cette URL **doit rester vivante** pendant toute la phase d'attente DNS :
+les QR papier déjà imprimés en dépendent.
 
 ## Voies secondaires (mises en attente)
 
@@ -60,6 +73,10 @@ MINDPREP_BASE_URL=https://ensupafrique-glitch.github.io/mindprep-app \
 
 ## Comment basculer
 
+> Ordre obligatoire : DNS d'abord, custom domain ensuite (côté GitHub
+> Settings, **pas via PR**), `CNAME` racine en tout dernier — ou laissé
+> à GitHub Pages, qui l'écrira lui-même au moment du *Save*.
+
 1. Suivre [`docs/17-github-pages-deblocage.md`](./docs/17-github-pages-deblocage.md)
    jusqu'à ce que `https://app.mindprep.ai/` réponde en HTTPS.
 2. Éditer `core/site-config.js` :
@@ -72,6 +89,12 @@ MINDPREP_BASE_URL=https://ensupafrique-glitch.github.io/mindprep-app \
    node core/qr-system/generate-assets.mjs
    ```
 4. Cocher les cases ci-dessus, committer.
+
+**Important** : un fichier `CNAME` à la racine n'est jamais ajouté par
+PR tant que `domainStatus` est `pending`. Soit GitHub Pages l'écrit
+lui-même via *Settings → Pages → Custom domain* (recommandé), soit on
+copie [`docs/domain/CNAME.example`](./docs/domain/CNAME.example)
+seulement à l'étape 4 ci-dessus, jamais avant.
 
 ## Vérifier rapidement
 

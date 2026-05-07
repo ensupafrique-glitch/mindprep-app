@@ -20,7 +20,7 @@ pratique ciblee sur les vrais points faibles.
 - `roadmap/` : MVP, backlog et priorites.
 - `core/qr-system/` : système QR Code premium (visuels SVG clair/sombre, landing post-scan, analytics). Voir [`docs/13-qr-system.md`](docs/13-qr-system.md). Studio interne : [`qr.html`](qr.html).
 - `core/site-config.js` : source de vérité unique pour l'URL publique (`app.mindprep.ai` cible, provider actif GitHub Pages, Vercel/Netlify en options secondaires).
-- `CNAME` : custom domain GitHub Pages — contient `app.mindprep.ai`.
+- `docs/domain/CNAME.example` : modèle du fichier `CNAME` racine. **Ne pas copier à la racine tant que le DNS n'est pas configuré et la bascule finale approuvée** — cf. [`docs/domain/README.md`](docs/domain/README.md).
 - `assets/qr/` : QR pré-générés (étudiant, concours, professeur, marketing × clair/sombre).
 - `vercel.json` : config Vercel (headers MIME modules ESM, alias `/qr` → `qr.html`).
 - `DOMAIN_STATUS.md` : checklist de bascule du domaine `app.mindprep.ai`.
@@ -39,6 +39,11 @@ Tant que le DNS n'est pas branché, l'app reste servie par
 `https://ensupafrique-glitch.github.io/mindprep-app/` (fallback, qui
 **est** le provider actif). Les QR codes affichent toujours
 `app.mindprep.ai` mais encodent l'URL de repli jusqu'à la bascule.
+
+> ⛔ **Garde-fou.** Aucun fichier `CNAME` à la racine du repo tant que
+> le DNS n'est pas configuré et la bascule finale approuvée. Modèle
+> documenté dans [`docs/domain/CNAME.example`](docs/domain/CNAME.example) ;
+> conditions d'activation dans [`docs/domain/README.md`](docs/domain/README.md).
 
 - **Procédure ACTIVE (GitHub Pages)** : [`docs/17-github-pages-deblocage.md`](docs/17-github-pages-deblocage.md).
 - Procédure Vercel (option, mise en attente) : [`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md).

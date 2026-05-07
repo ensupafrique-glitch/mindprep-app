@@ -7,6 +7,24 @@
 Voir aussi [`docs/15-securite-migration.md`](./15-securite-migration.md)
 et [`MIGRATION_CHECKLIST.md`](../MIGRATION_CHECKLIST.md).
 
+## Cas particulier — `CNAME` racine mergé prématurément
+
+Si un fichier `CNAME` se retrouve à la racine de `main` alors que le
+DNS n'est pas encore prêt (cas de la PR #23, mai 2026) :
+
+1. **Côté GitHub** : retirer immédiatement le custom domain via
+   *Settings → Pages → Custom domain* (vider le champ) ou via
+   l'API `PUT /repos/:owner/:repo/pages` avec `cname: null`.
+2. **Côté repo** : ouvrir une PR safety qui supprime le `CNAME` racine
+   et la merger en priorité (cf. commit `9440f74`).
+3. **Vérifier** que `https://ensupafrique-glitch.github.io/mindprep-app/`
+   redevient accessible — c'est l'URL fallback à protéger.
+4. **Ne pas re-merger** un `CNAME` racine avant d'avoir terminé les
+   étapes DNS de [`docs/17-github-pages-deblocage.md`](./17-github-pages-deblocage.md).
+5. Garder le modèle `docs/domain/CNAME.example` comme référence — il
+   ne déclenche aucune bascule GitHub Pages parce qu'il n'est pas à la
+   racine.
+
 ---
 
 ## Niveaux de rollback

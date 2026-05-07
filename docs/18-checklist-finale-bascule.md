@@ -19,6 +19,18 @@
 | 🟡 **À vérifier en production avec secrets** | Non testable sans clés réelles |
 | ⛔ **Blocked** | Anomalie identifiée, à corriger avant bascule |
 
+## ⛔ Garde-fou (mise à jour 2026-05-07)
+
+Le fichier `CNAME` à la racine, présent dans la PR #23 d'origine, a été
+**retiré de `main`** (commit `9440f74`) parce qu'il a déclenché la
+bascule automatique du custom domain GitHub Pages alors que le DNS de
+`app.mindprep.ai` n'était pas configuré, mettant en risque la fallback
+URL `*.github.io` (les QR papier en dépendent).
+
+**Règle stricte** : ne jamais re-merger un `CNAME` racine tant que
+`domainStatus` est `pending` et que le DNS n'est pas validé. Voir
+[`./domain/README.md`](./domain/README.md).
+
 ## Synthèse — décision recommandée
 
 > **Prêt avec réserves.** Toutes les conditions techniques côté code et
@@ -147,7 +159,7 @@ Liens locaux extraits de `index.html` et testés contre le serveur local :
 | `qr.html` | 200 |
 | `core/site-config.js` | 200 |
 | `core/qr-system/qr-config.js` | 200 |
-| `CNAME` | 200 (contient `app.mindprep.ai`) |
+| `CNAME` | ⛔ N/A — fichier intentionnellement absent tant que le DNS n'est pas prêt (cf. garde-fou) |
 | `assets/qr/*.svg` (×6 testés) | 200 |
 
 ### 9. Exports PDF / Word — ⚠️ Warning

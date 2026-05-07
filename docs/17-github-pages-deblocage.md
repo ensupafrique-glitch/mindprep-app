@@ -8,10 +8,28 @@
 > d'un tiers. Vercel et Netlify restent des options secondaires, on ne
 > supprime aucun de leurs fichiers de configuration.
 
+## ⛔ Garde-fou — fichier `CNAME` racine
+
+> **Ne pas merger un fichier `CNAME` à la racine de `main` tant que le
+> DNS n'est pas configuré et la bascule finale approuvée.** Une PR
+> précédente l'a fait, ce qui a déclenché côté GitHub Pages la bascule
+> automatique vers `app.mindprep.ai` alors que le DNS n'était pas prêt
+> — risque immédiat de coupure du fallback `*.github.io`. Le custom
+> domain a été retiré manuellement via l'API GitHub et le fichier
+> supprimé de `main` (commit `9440f74`).
+>
+> Modèle conservé dans
+> [`../domain/CNAME.example`](../domain/CNAME.example) — voir
+> [`../domain/README.md`](../domain/README.md) pour les conditions
+> d'activation.
+
 ## Ce qui est fait dans ce PR (côté code)
 
-- **`CNAME`** à la racine du repo : contient `app.mindprep.ai`. GitHub
-  Pages publie ce fichier tel quel et l'utilise comme custom domain.
+- **Pas de fichier `CNAME` à la racine** tant que `domainStatus` reste
+  `pending`. Le fichier sera créé soit par GitHub Pages lui-même
+  (au moment du *Save* dans Settings → Pages), soit en copiant
+  [`../domain/CNAME.example`](../domain/CNAME.example) — uniquement
+  après que toutes les étapes ci-dessous soient validées.
 - **`core/site-config.js`** : `provider: 'github_pages'`,
   `productionUrl: 'https://app.mindprep.ai'`,
   `fallbackUrl: 'https://ensupafrique-glitch.github.io/mindprep-app/'`,
@@ -35,16 +53,35 @@ domain n'est pas activé.
 
 ### 2. Renseigner le custom domain côté GitHub
 
+> ⚠️ **À faire seulement après l'étape 3** (record DNS créé chez le
+> registrar). Saisir le custom domain avant que le DNS résolve déclenche
+> chez GitHub un *DNS check failed* qui peut rendre le site
+> momentanément inaccessible.
+
 **Settings → Pages → Custom domain**. Saisir :
 
 ```
 app.mindprep.ai
 ```
 
-Cliquer **Save**. GitHub écrit automatiquement le fichier `CNAME` à la
-racine — il existe déjà dans ce PR, donc aucune écriture supplémentaire
-ne sera faite. **Ne pas cocher *Enforce HTTPS*** tant que le check DNS
-n'est pas vert (sinon GitHub bloque le site temporairement).
+Cliquer **Save**. GitHub écrit alors automatiquement le fichier
+`CNAME` à la racine du repo. C'est la méthode recommandée — on
+n'ajoute pas ce fichier par PR. **Ne pas cocher *Enforce HTTPS*** tant
+que le check DNS n'est pas vert (sinon GitHub bloque le site
+temporairement).
+
+> Si pour une raison quelconque GitHub Pages n'écrit pas le `CNAME`
+> automatiquement, copier le modèle :
+>
+> ```bash
+> cp docs/domain/CNAME.example CNAME
+> git add CNAME
+> git commit -m "feat(domain): activate custom domain app.mindprep.ai"
+> git push
+> ```
+>
+> Faire ce commit **uniquement après** que `dig +short app.mindprep.ai`
+> retourne bien `ensupafrique-glitch.github.io`.
 
 ### 3. Créer le record DNS chez le registrar
 
@@ -112,7 +149,7 @@ Pages) restent valides — c'est exactement le même hôte.
 |--------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------|
 | L1     | DNS lent / certificat pas encore émis        | Décocher *Enforce HTTPS* dans Settings → Pages, attendre.                                                    |
 | L2     | Custom domain casse l'accès au site          | Settings → Pages → vider le champ *Custom domain* (GitHub Pages reprend immédiatement sur le sous-domaine).  |
-| L3     | Besoin d'annuler côté repo                   | Supprimer le fichier `CNAME` à la racine et committer.                                                       |
+| L3     | Besoin d'annuler côté repo                   | Supprimer le fichier `CNAME` à la racine et committer (même réflexe qu'au commit `9440f74`).                  |
 | L4     | Besoin de revenir en `pending` côté QR       | Repasser `domainStatus: 'pending'` dans `core/site-config.js`, régénérer les QR.                             |
 
 Le fallback `https://ensupafrique-glitch.github.io/mindprep-app/`
@@ -135,6 +172,9 @@ débloquer la situation aujourd'hui.
 
 ```bash
 # 1. Le fichier CNAME publié contient le bon domaine ?
+#    À tester UNIQUEMENT après que GitHub Pages a écrit le fichier
+#    CNAME suite au Save dans Settings → Pages. Tant que le DNS n'est
+#    pas prêt, ce fichier ne doit pas exister à la racine.
 curl -s https://ensupafrique-glitch.github.io/mindprep-app/CNAME
 # attendu : app.mindprep.ai
 

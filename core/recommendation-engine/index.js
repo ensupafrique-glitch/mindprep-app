@@ -100,7 +100,7 @@ function buildNextStep(profile, subjectLabel, difficulty) {
     reviser:   `Continue avec une fiche de synthèse en ${subjectLabel}, puis enchaîne 3 mini-tests.`,
     examen:    `Passe à un sujet niveau ${DIFFICULTY[next].label} en ${subjectLabel} et chronomètre-toi.`,
     entrainer: `Refais 5 exercices ciblés en ${subjectLabel}, puis vise un sujet de niveau ${DIFFICULTY[next].label}.`,
-    corriger:  `Soumets une copie ${subjectLabel} à la correction IA et compare la grille de notation.`,
+    corriger:  `Soumets une copie ${subjectLabel} à l'Assistant Correction et compare la grille de notation.`,
     ameliorer: `Travaille les définitions clés en ${subjectLabel}, puis refais ce mini-test au niveau ${DIFFICULTY[next].label}.`,
   };
   return map[obj.id] || map.examen;

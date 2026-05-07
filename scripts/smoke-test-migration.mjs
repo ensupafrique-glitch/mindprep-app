@@ -3,8 +3,11 @@
 //
 // Usage:
 //   MINDPREP_BASE_URL=https://app.mindprep.ai node scripts/smoke-test-migration.mjs
-//   MINDPREP_BASE_URL=https://mindprep-app.vercel.app node scripts/smoke-test-migration.mjs
 //   MINDPREP_BASE_URL=https://ensupafrique-glitch.github.io/mindprep-app node scripts/smoke-test-migration.mjs
+//   MINDPREP_BASE_URL=https://mindprep-app.vercel.app node scripts/smoke-test-migration.mjs
+//
+// Le provider hébergeur est détecté côté `core/site-config.js`. Le smoke test
+// est volontairement agnostique — il teste uniquement le BASE_URL fourni.
 //
 // Variables d'environnement supportées:
 //   MINDPREP_BASE_URL  (requis) — URL racine à tester, sans slash final
@@ -122,7 +125,13 @@ async function main() {
   console.log(COLOR.cyan('[1] Pages publiques'));
   await checkStatus('must', 'Landing (/)', '/');
   await checkStatus('must', 'QR studio (/qr.html)', '/qr.html');
-  await checkStatus('should', 'Alias /qr (Vercel rewrite)', '/qr');
+  await checkStatus('should', 'Alias /qr (Vercel rewrite, ignoré sur GH Pages)', '/qr');
+  // Sur GitHub Pages, le fichier CNAME à la racine doit être servi tel quel et
+  // contenir le domaine de marque. Sur Vercel/Netlify, le fichier est ignoré
+  // par l'hébergeur — on rétrograde donc en "should".
+  await checkContains('should', 'CNAME servi (custom domain GitHub Pages)', '/CNAME', [
+    'app.mindprep.ai',
+  ]);
 
   console.log(COLOR.cyan('\n[2] Contenu de la landing'));
   await checkContains('must', 'Mention "MindPrep"', '/', ['MindPrep']);
@@ -145,6 +154,13 @@ async function main() {
     await checkStatus('must', `QR asset ${path}`, path);
   }
   await checkContentType('should', 'Content-Type SVG correct', qrAssets[0], 'image/svg');
+  // Sanity check léger : le SVG doit déclarer son namespace SVG. Le contenu
+  // encodé du QR est un dessin vectoriel, pas du texte — on ne peut donc pas
+  // y "grep" l'URL. La validation d'URL se fait au moment de la régénération,
+  // pas via HTTP (cf. `node core/qr-system/generate-assets.mjs`).
+  await checkContains('should', 'QR student-light est un SVG bien formé', qrAssets[0], [
+    /<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/,
+  ]);
 
   console.log(COLOR.cyan('\n[4] Modules ESM (Content-Type)'));
   await checkContentType('must', 'core/site-config.js servi en JS', '/core/site-config.js', 'javascript');

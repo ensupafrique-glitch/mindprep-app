@@ -19,7 +19,8 @@ pratique ciblee sur les vrais points faibles.
 - `data/` : modele de donnees et contenu pedagogique.
 - `roadmap/` : MVP, backlog et priorites.
 - `core/qr-system/` : système QR Code premium (visuels SVG clair/sombre, landing post-scan, analytics). Voir [`docs/13-qr-system.md`](docs/13-qr-system.md). Studio interne : [`qr.html`](qr.html).
-- `core/site-config.js` : source de vérité unique pour l'URL publique (`app.mindprep.ai` cible, GitHub Pages en repli tant que le DNS n'est pas branché).
+- `core/site-config.js` : source de vérité unique pour l'URL publique (`app.mindprep.ai` cible, provider actif GitHub Pages, Vercel/Netlify en options secondaires).
+- `CNAME` : custom domain GitHub Pages — contient `app.mindprep.ai`.
 - `assets/qr/` : QR pré-générés (étudiant, concours, professeur, marketing × clair/sombre).
 - `vercel.json` : config Vercel (headers MIME modules ESM, alias `/qr` → `qr.html`).
 - `DOMAIN_STATUS.md` : checklist de bascule du domaine `app.mindprep.ai`.
@@ -29,13 +30,18 @@ pratique ciblee sur les vrais points faibles.
 
 ## Hébergement & domaine
 
-Le domaine cible est **`https://app.mindprep.ai`**, hébergé sur **Vercel**.
-Tant que le DNS n'est pas branché, l'app reste servie par
-`https://ensupafrique-glitch.github.io/mindprep-app/` (fallback). Les QR
-codes affichent toujours `app.mindprep.ai` mais encodent l'URL de repli
-jusqu'à la bascule.
+Le domaine cible est **`https://app.mindprep.ai`**. Provider actif :
+**GitHub Pages** (`provider: 'github_pages'` dans
+[`core/site-config.js`](core/site-config.js)). Vercel et Netlify sont
+gardés comme options secondaires — aucune config n'est supprimée.
 
-- Procédure technique : [`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md).
+Tant que le DNS n'est pas branché, l'app reste servie par
+`https://ensupafrique-glitch.github.io/mindprep-app/` (fallback, qui
+**est** le provider actif). Les QR codes affichent toujours
+`app.mindprep.ai` mais encodent l'URL de repli jusqu'à la bascule.
+
+- **Procédure ACTIVE (GitHub Pages)** : [`docs/17-github-pages-deblocage.md`](docs/17-github-pages-deblocage.md).
+- Procédure Vercel (option, mise en attente) : [`docs/14-vercel-deployment.md`](docs/14-vercel-deployment.md).
 - **Sécurité de migration** : [`docs/15-securite-migration.md`](docs/15-securite-migration.md).
 - **Plan de rollback** : [`docs/16-rollback-plan.md`](docs/16-rollback-plan.md).
 - Checklist opérationnelle : [`MIGRATION_CHECKLIST.md`](MIGRATION_CHECKLIST.md).
